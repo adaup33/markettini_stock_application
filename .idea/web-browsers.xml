@@ -1,0 +1,13 @@
+<project version="4">
+  <component name="WebBrowsersConfiguration">
+    <!-- Select Chrome as the default browser for this project -->
+    <option name="selected" value="CHROME" />
+
+    <!-- Mark only Chrome as active in the Open in Browser list -->
+    <browser family="CHROME" active="true" />
+    <browser family="EDGE" active="false" />
+    <browser family="FIREFOX" active="false" />
+    <browser family="OPERA" active="false" />
+    <browser family="SAFARI" active="false" />
+  </component>
+</project>
