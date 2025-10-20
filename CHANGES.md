@@ -51,3 +51,14 @@ How to verify:
 - Visit a protected route (e.g., `/`) while logged out; you should be redirected to `/sign-in`.
 - Visit `/sign-in` and `/sign-up`; they should be accessible and not redirected.
 
+
+
+---
+
+# TypeScript cast fix for MongoDB adapter (2025-10-20)
+
+- Replaced `mongodbAdapter(db as never)` with a properly typed `Db` from the official `mongodb` driver in `lib/better-auth/auth.ts`.
+- Rationale: using `as any` is discouraged and typically blocked by lint rules; `as never` compiles because `never` is assignable to all types but is misleading. We now narrow to `mongodb.Db` after ensuring the connection exists, keeping adapter types intact without suppressing type safety.
+
+Impact:
+- No runtime behavior change; code is clearer and type-safe.
