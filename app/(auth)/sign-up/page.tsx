@@ -23,9 +23,9 @@ const SignUp = () => {
             fullName: '',
             email: '',
             password: '',
-            country: 'Hungary',
+            country: 'US',
             investmentGoals: 'Growth',
-            riskTolerance: 'High',
+            riskTolerance: 'Medium',
             preferredIndustry: 'Technology'
         },
         mode: 'onBlur'
@@ -60,7 +60,7 @@ const SignUp = () => {
                 <InputField
                     name="email"
                     label="Email"
-                    placeholder="john.doe@gmail.com"
+                    placeholder="contact@jsmastery.com"
                     register={register}
                     error={errors.email}
                     validation={{ required: 'Email name is required', pattern: /^\w+@\w+\.\w+$/, message: 'Email address is required' }}
@@ -97,7 +97,7 @@ const SignUp = () => {
                 <SelectField
                     name="riskTolerance"
                     label="Risk Tolerance"
-                    placeholder="What is your risk tolerance?"
+                    placeholder="Select your risk level"
                     options={RISK_TOLERANCE_OPTIONS}
                     control={control}
                     error={errors.riskTolerance}
@@ -107,7 +107,7 @@ const SignUp = () => {
                 <SelectField
                     name="preferredIndustry"
                     label="Preferred Industry"
-                    placeholder="What is your preferred industry?"
+                    placeholder="Select your preferred industry"
                     options={PREFERRED_INDUSTRIES}
                     control={control}
                     error={errors.preferredIndustry}
