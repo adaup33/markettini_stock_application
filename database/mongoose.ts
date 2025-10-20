@@ -6,7 +6,7 @@ declare global {
     var mongooseCache: {
         conn: typeof mongoose | null;
         promise: Promise<typeof mongoose> | null;
-    }
+    };
 }
 
 let cached = global.mongooseCache;
@@ -31,7 +31,7 @@ export const connectToDb = async () => {
         throw err;
     }
 
-    console.log(`Connected to database ${process.env.NODE_ENV} - ${MONGODB_URI}`);
+    console.log('Connected to database ${process.env.NODE_ENV} - ${MONGODB_URI}');
 
     return cached.conn;
 }

@@ -9,14 +9,12 @@ export const getAuth = async () => {
     if(authInstance) return authInstance;
 
     const mongoose = await connectToDb();
-    // Ensure we get a valid MongoDB Db instance even if no db name is present in the URI
-    const client = mongoose.connection.getClient();
-    const db = mongoose.connection.db ?? client.db();
+    const db = mongoose.connection.db;
 
     if(!db) throw new Error('MongoDB connection not found');
 
     authInstance = betterAuth({
-        database: mongodbAdapter,
+        database: mongodbAdapter(db as never),
         secret: process.env.BETTER_AUTH_SECRET,
         baseURL: process.env.BETTER_AUTH_URL,
         emailAndPassword: {
