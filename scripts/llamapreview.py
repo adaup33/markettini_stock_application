@@ -1,17 +1,9 @@
 #!/usr/bin/env python3
 """
-LlamaPReview runner:
-- Collects PR changed files using the GitHub API (GITHUB_TOKEN)
-- Builds a concise prompt tailored for stock-market apps
-- Sends prompt to provider: Perplexity (placeholder), Hugging Face, or OpenAI
-- Posts a PR comment with the model response
-Environment:
-- GITHUB_TOKEN (required)
-- MODEL_PROVIDER ("perplexity" | "huggingface" | "openai" | "local")
-- If perplexity: PERPLEXITY_API_KEY
-- If huggingface: HF_TOKEN, HF_MODEL
-- If openai: OPENAI_API_KEY, OPENAI_MODEL
-- LOCAL_MODEL_PATH (only for self-hosted runners)
+LlamaPReview runner (improved):
+- More robust MODEL_PROVIDER handling and clearer errors.
+- Defaults to 'huggingface' if MODEL_PROVIDER is not set.
+- Explicit guidance when Perplexity is selected (placeholder path).
 """
 import os
 import sys
@@ -24,7 +16,7 @@ GITHUB_API = "https://api.github.com"
 def load_event(event_path_arg):
     event_path = os.environ.get("GITHUB_EVENT_PATH") or (event_path_arg if event_path_arg else None)
     if not event_path or not os.path.exists(event_path):
-        raise SystemExit("GITHUB_EVENT_PATH not found. Provide path or run from GitHub Actions.")
+        raise SystemExit("GITHUB_EVENT_PATH not found. This script should run inside GitHub Actions or be passed --event-path.")
     with open(event_path, "r") as f:
         return json.load(f)
 
@@ -72,10 +64,12 @@ def generate_prompt(repo_full, pr_number, file_summaries):
     return header + instructions + "\nFiles (truncated):\n" + files_text
 
 def call_perplexity(prompt, token):
-    # Perplexity's public API is not standardly available; this is a placeholder.
-    # If you have a Perplexity Teams/partner API endpoint, implement the request here.
-    # For now, we'll raise an error so the workflow fails clearly if MODEL_PROVIDER=perplexity
-    raise NotImplementedError("Perplexity API integration is not implemented in this script. Add a provider implementation or use Hugging Face / OpenAI.")
+    # Perplexity integration is not implemented here.
+    raise NotImplementedError(
+        "Perplexity API integration is not implemented in this script. "
+        "If you want to use Perplexity, provide Perplexity API docs and I can add the implementation. "
+        "Until then, set MODEL_PROVIDER to 'huggingface' or 'openai' and add the appropriate token secrets."
+    )
 
 def call_huggingface(model, prompt, hf_token):
     url = f"https://api-inference.huggingface.co/models/{model}"
@@ -117,6 +111,7 @@ def main():
     token = os.environ.get("GITHUB_TOKEN")
     if not token:
         raise SystemExit("GITHUB_TOKEN is required in environment")
+
     repo_full = event.get("repository", {}).get("full_name")
     if not repo_full:
         raise SystemExit("Cannot determine repo from event payload")
@@ -126,32 +121,49 @@ def main():
         raise SystemExit("This script expects a pull_request event")
     pr_number = pr["number"]
 
+    # Robust provider parsing
+    raw_provider = os.environ.get("MODEL_PROVIDER")
+    if raw_provider:
+        provider = raw_provider.strip().lower()
+    else:
+        provider = "huggingface"  # default for safer immediate runs
+
+    # If MODEL_PROVIDER is stored as a secret, logs will mask it as ***, so we avoid printing the raw secret.
+    print(f"Using provider (normalized): {provider}")
+
     files = list_pr_files(owner, repo, pr_number, token)
     file_summaries = summarize_changed_files(files, limit=8, chars_per_patch=1500)
     prompt = generate_prompt(repo_full, pr_number, file_summaries)
 
-    provider = (os.environ.get("MODEL_PROVIDER") or "perplexity").lower()
-    print(f"Using provider: {provider}")
-
     if provider == "perplexity":
-        key = os.environ.get("PERPLEXITY_API_KEY")
-        if not key:
-            raise SystemExit("PERPLEXITY_API_KEY required for perplexity provider")
-        result = call_perplexity(prompt, key)
+        # Perplexity is intentionally not implemented here; instruct user how to proceed.
+        raise SystemExit(
+            "Selected MODEL_PROVIDER=perplexity but Perplexity integration is not implemented in this script.\n"
+            "Options:\n"
+            "  - Change MODEL_PROVIDER to 'huggingface' and set HF_TOKEN + HF_MODEL in repo secrets\n"
+            "  - Or change MODEL_PROVIDER to 'openai' and set OPENAI_API_KEY + OPENAI_MODEL\n"
+            "  - Or provide Perplexity API docs and I will add the implementation.\n"
+        )
     elif provider == "huggingface":
         hf_token = os.environ.get("HF_TOKEN")
         hf_model = os.environ.get("HF_MODEL") or "tiiuae/falcon-7b-instruct"
         if not hf_token:
-            raise SystemExit("HF_TOKEN required for huggingface provider")
+            raise SystemExit("HF_TOKEN is required for huggingface provider. Add it to repository secrets.")
         result = call_huggingface(hf_model, prompt, hf_token)
     elif provider == "openai":
         api_key = os.environ.get("OPENAI_API_KEY")
         model = os.environ.get("OPENAI_MODEL") or "gpt-4o-mini"
         if not api_key:
-            raise SystemExit("OPENAI_API_KEY required for openai provider")
+            raise SystemExit("OPENAI_API_KEY is required for openai provider. Add it to repository secrets.")
         result = call_openai(model, prompt, api_key)
+    elif provider == "local":
+        raise SystemExit("Local provider not supported on GitHub-hosted runners. Use a self-hosted runner + adapt the script.")
     else:
-        raise SystemExit(f"Unknown provider: {provider}")
+        raise SystemExit(
+            f"Unknown MODEL_PROVIDER value: '{raw_provider}'.\n"
+            "Allowed values: 'huggingface', 'openai', 'perplexity'.\n"
+            "Set the repository secret MODEL_PROVIDER to one of these strings, or remove it and let the workflow default to 'huggingface'."
+        )
 
     body = (
         f"## LlamaPReview — automated review\n\n"
