@@ -39,7 +39,7 @@ const TodoSchema = new Schema(
 // Types
 export type Todo = InferSchemaType<typeof TodoSchema> & { _id: mongoose.Types.ObjectId };
 
-// Avoid model recompilation on hot reloads
+// Avoid models recompilation on hot reloads
 export const TodoModel: Model<Todo> =
   (mongoose.models.Todo as Model<Todo>) || mongoose.model<Todo>('Todo', TodoSchema);
 ```
