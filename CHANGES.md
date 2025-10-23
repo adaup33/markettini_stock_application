@@ -62,3 +62,42 @@ How to verify:
 
 Impact:
 - No runtime behavior change; code is clearer and type-safe.
+
+
+---
+
+# Replace image logos with text brand and remove logo assets (2025-10-20)
+
+- Replaced all site logo images with a text brand to avoid image load delays:
+  - components/Header.tsx now renders a styled text block "Marketinni" instead of an image, keeping the original height (h-8) for consistent layout.
+  - app/(auth)/layout.tsx now links to a text brand in the sidebar header; other images on that page (stars, dashboard preview) remain unchanged.
+- Updated all Nodemailer email templates to remove the remote logo image and render a styled text brand instead.
+- Disabled TradingView widget symbol logos by setting showSymbolLogo to false in lib/constants.ts to avoid fetching symbol logo images.
+- Removed unused logo assets from public/:
+  - public/assets/icons/logo.svg
+  - public/assets/images/logo.png
+- Minor cleanup: removed an unused next/image import from components/Header.tsx.
+
+Styling details
+- Font: use the project’s default system/Geist stack; weight: extra-bold; tracking: tight; color: emerald-600 (#10b981).
+- Size: wrapped in a container with class h-8 to approximate the original 140×32 logo dimensions without layout shifts.
+
+How to verify
+1. Run the app and visit any page with the header: the brand should display as “Marketinni” (green, bold) with no image requests for the logo.
+2. Visit /sign-in or /sign-up: the brand text appears where the auth logo used to be.
+3. Trigger any email (e.g., sign-up): the header shows the text brand instead of an external logo image.
+4. Check TradingView widgets on the dashboard: they should render without symbol logos.
+5. Search the codebase for "logo.svg" or "logo.png"; there should be no remaining references.
+
+
+---
+
+# Remove testimonial from auth layout (2025-10-20)
+
+- Removed the customer testimonial (quote, author name, and star rating) from the auth layout right pane at `app/(auth)/layout.tsx`.
+- Kept the dashboard preview image intact to preserve the intended visual design.
+- Rationale: you requested to remove the review content (“Signalist turned my watchlist… — Ethan R., Retail Investor”) and not show testimonials.
+
+How to verify
+1. Visit `/sign-in` and `/sign-up` — the right panel should no longer display the testimonial or star icons.
+2. The header, form content, and dashboard preview image should remain unchanged.
