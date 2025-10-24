@@ -25,7 +25,6 @@ export const sendWelcomeEmail = async ({ email, name, intro }: WelcomeEmailData)
     await transporter.sendMail(mailOptions);
 }
 
-
 export const sendNewsSummaryEmail = async (
     { email, date, newsContent }: { email: string; date: string; newsContent: string }
 ): Promise<void> => {
