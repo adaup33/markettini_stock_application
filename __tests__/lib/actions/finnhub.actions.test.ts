@@ -2,7 +2,6 @@
  * @jest-environment node
  */
 import { fetchJSON, getNews, searchStocks } from '@/lib/actions/finnhub.actions';
-import { validateArticle, formatArticle } from '@/lib/utils';
 
 // Mock global fetch
 global.fetch = jest.fn();

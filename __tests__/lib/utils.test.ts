@@ -83,6 +83,7 @@ describe('Utility Functions', () => {
 
     it('should handle zero and null values', () => {
       expect(formatMarketCapValue(0)).toBe('N/A');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(formatMarketCapValue(null as any)).toBe('N/A');
     });
   });
@@ -145,32 +146,32 @@ describe('Utility Functions', () => {
 
   describe('validateArticle', () => {
     it('should validate article with all required fields', () => {
-      const article: RawNewsArticle = {
+      const article = {
         id: 1,
         headline: 'Test Headline',
         summary: 'Test Summary',
         url: 'https://example.com',
         datetime: 1234567890,
-      };
+      } as RawNewsArticle;
       expect(validateArticle(article)).toBeTruthy();
     });
 
     it('should invalidate article with missing fields', () => {
-      const article: RawNewsArticle = {
+      const article = {
         id: 1,
         headline: 'Test Headline',
-      };
+      } as RawNewsArticle;
       expect(validateArticle(article)).toBeFalsy();
     });
 
     it('should invalidate article with empty fields', () => {
-      const article: RawNewsArticle = {
+      const article = {
         id: 1,
         headline: '',
         summary: 'Test Summary',
         url: 'https://example.com',
         datetime: 1234567890,
-      };
+      } as RawNewsArticle;
       expect(validateArticle(article)).toBeFalsy();
     });
   });
@@ -190,14 +191,14 @@ describe('Utility Functions', () => {
 
   describe('formatArticle', () => {
     it('should format company news article', () => {
-      const rawArticle: RawNewsArticle = {
+      const rawArticle = {
         id: 123,
         headline: 'Company News Headline',
         summary: 'This is a summary of the company news article that should be truncated if too long. '.repeat(10),
         url: 'https://example.com',
         datetime: 1234567890,
         source: 'Test Source',
-      };
+      } as RawNewsArticle;
       const result = formatArticle(rawArticle, true, 'AAPL', 0);
       
       expect(result.headline).toBe('Company News Headline');
@@ -208,7 +209,7 @@ describe('Utility Functions', () => {
     });
 
     it('should format market news article', () => {
-      const rawArticle: RawNewsArticle = {
+      const rawArticle = {
         id: 456,
         headline: 'Market News Headline',
         summary: 'This is a summary of the market news article that should be truncated if too long. '.repeat(10),
@@ -216,7 +217,7 @@ describe('Utility Functions', () => {
         datetime: 1234567890,
         category: 'general',
         related: 'MARKET',
-      };
+      } as RawNewsArticle;
       const result = formatArticle(rawArticle, false, undefined, 1);
       
       expect(result.headline).toBe('Market News Headline');
@@ -226,13 +227,13 @@ describe('Utility Functions', () => {
     });
 
     it('should use default values for missing fields', () => {
-      const rawArticle: RawNewsArticle = {
+      const rawArticle = {
         id: 789,
         headline: 'Test',
         summary: 'Summary',
         url: 'https://example.com',
         datetime: 1234567890,
-      };
+      } as RawNewsArticle;
       const result = formatArticle(rawArticle, false, undefined, 0);
       
       expect(result.source).toBe('Market News');
@@ -299,7 +300,7 @@ describe('Utility Functions', () => {
 
   describe('getAlertText', () => {
     it('should format upper alert', () => {
-      const alert: Alert = {
+      const alert = {
         id: '1',
         symbol: 'AAPL',
         company: 'Apple',
@@ -307,12 +308,12 @@ describe('Utility Functions', () => {
         currentPrice: 150,
         alertType: 'upper',
         threshold: 200,
-      };
+      } as Alert;
       expect(getAlertText(alert)).toBe('Price > $200.00');
     });
 
     it('should format lower alert', () => {
-      const alert: Alert = {
+      const alert = {
         id: '2',
         symbol: 'AAPL',
         company: 'Apple',
@@ -320,7 +321,7 @@ describe('Utility Functions', () => {
         currentPrice: 150,
         alertType: 'lower',
         threshold: 100,
-      };
+      } as Alert;
       expect(getAlertText(alert)).toBe('Price < $100.00');
     });
   });
