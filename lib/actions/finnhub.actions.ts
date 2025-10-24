@@ -121,7 +121,7 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
                         return { sym, profile } as { sym: string; profile: any };
                     } catch (e) {
                         console.error('Error fetching profile2 for', sym, e);
-                        return { sym, profile: null } as { sym: string; profile: string | null};
+                        return { sym, profile: null } as { sym: string; profile: any | null};
                     }
                 })
             );
