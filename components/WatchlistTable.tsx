@@ -57,8 +57,8 @@ const WatchlistTable = () => {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {sampleData.map((row, index) => (
-                        <TableRow key={index}>
+                    {sampleData.map((row) => (
+                        <TableRow key={row.symbol}>
                             <TableCell className="text-left">{row.company}</TableCell>
                             <TableCell className="text-left">{row.symbol}</TableCell>
                             <TableCell className="text-left">{row.price}</TableCell>
