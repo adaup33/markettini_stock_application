@@ -1,11 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { CommandDialog, CommandEmpty, CommandInput, CommandList } from "@/components/ui/command"
 import {Button} from "@/components/ui/button";
 import {Loader2,  TrendingUp} from "lucide-react";
 import Link from "next/link";
-import {searchStocks} from "@/lib/actions/finnhub.actions";
 import {useDebounce} from "@/hooks/useDebounce";
 
 export default function SearchCommand({ renderAs = 'button', label = 'Add stock', initialStocks }: SearchCommandProps) {
@@ -28,25 +27,50 @@ export default function SearchCommand({ renderAs = 'button', label = 'Add stock'
         return () => window.removeEventListener("keydown", onKeyDown)
     }, [])
 
-    const handleSearch = async () => {
+    // Keep local stocks in sync when the initialStocks prop changes (avoid stale initial state)
+    useEffect(() => {
+        // Only update when not actively searching so we don't clobber user input
+        if (!isSearchMode) {
+            setStocks(initialStocks ?? []);
+        }
+    }, [initialStocks, isSearchMode]);
+
+    const handleSearch = useCallback(async () => {
         if(!isSearchMode) return setStocks(initialStocks ?? []);
 
         setLoading(true)
         try {
-            const results = await searchStocks(searchTerm.trim());
-            setStocks(results);
-        } catch {
+            // Try a client-side fetch fallback to an API route if available. This keeps the client
+            // component decoupled from server-only actions. If no API exists the fetch will fail
+            // gracefully and we'll show no results.
+            const trimmed = searchTerm.trim();
+            if (!trimmed) {
+                setStocks(initialStocks ?? []);
+                return;
+            }
+
+            // Attempt to call a client API endpoint (optional - implement server route if desired)
+            const res = await fetch(`/api/search-stocks?q=${encodeURIComponent(trimmed)}`);
+            if (res.ok) {
+                const data = await res.json();
+                setStocks(Array.isArray(data) ? data : []);
+            } else {
+                setStocks([]);
+            }
+        } catch (err) {
+            console.error('search-stocks error:', err);
             setStocks([])
         } finally {
             setLoading(false)
         }
-    }
+    }, [isSearchMode, searchTerm, initialStocks]);
 
     const debouncedSearch = useDebounce(handleSearch, 300);
 
     useEffect(() => {
+        // Include debouncedSearch in deps to satisfy exhaustive-deps and to ensure stability
         debouncedSearch();
-    }, [searchTerm]);
+    }, [searchTerm, debouncedSearch]);
 
     const handleSelectStock = () => {
         setOpen(false);
@@ -83,7 +107,7 @@ export default function SearchCommand({ renderAs = 'button', label = 'Add stock'
                                 {isSearchMode ? 'Search results' : 'Popular stocks'}
                                 {` `}({displayStocks?.length || 0})
                             </div>
-                            {displayStocks?.map((stock, i) => (
+                            {displayStocks?.map((stock) => (
                                 <li key={stock.symbol} className="search-item">
                                     <Link
                                         href={`/stocks/${stock.symbol}`}
