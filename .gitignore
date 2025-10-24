@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+#local for me
+CHANGES.md
+HOW_TO_Add_Server_Actions_with_Mongoose.md
