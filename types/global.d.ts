@@ -1,8 +1,12 @@
 declare global {
-    interface SignInFormData {
+    // ============================================
+    // FORM DATA TYPES
+    // ============================================
+
+    type SignInFormData = {
         email: string;
         password: string;
-    }
+    };
 
     type SignUpFormData = {
         fullName: string;
@@ -14,11 +18,19 @@ declare global {
         preferredIndustry: string;
     };
 
-    interface WelcomeEmailData {
+    // ============================================
+    // EMAIL TYPES
+    // ============================================
+
+    type WelcomeEmailData = {
         email: string;
         name: string;
         intro: string;
-    }
+    };
+
+    // ============================================
+    // USER TYPES
+    // ============================================
 
     type User = {
         id: string;
@@ -26,7 +38,20 @@ declare global {
         email: string;
     };
 
-    //
+    type UserForNewsEmail = {
+        id: string;
+        email: string;
+        name: string;
+        country: string;
+        investmentGoals?: string;
+        riskTolerance?: string;
+        preferredIndustry?: string;
+    };
+
+    // ============================================
+    // STOCK DATA TYPES - FIX FOR FINNHUB.ACTIONS.TS
+    // ============================================
+
     type StockData = {
         symbol: string;
         company: string;
@@ -37,6 +62,109 @@ declare global {
         eps: string;
         sentiment: string;
     };
+
+    type Stock = {
+        symbol: string;
+        name: string; // This fixes the 'name' error in finnhub.actions.ts
+        description?: string; // Alternative name field
+        exchange: string;
+        type: string;
+        ticker?: string; // Some APIs use 'ticker' instead of 'symbol'
+        displaySymbol?: string;
+    };
+
+    type StockWithWatchlistStatus = Stock & {
+        isInWatchlist: boolean;
+    };
+
+    type StockWithData = {
+        _id?: string;
+        userId: string;
+        symbol: string;
+        company: string;
+        name?: string; // Alternative to company
+        addedAt: Date;
+        currentPrice?: number;
+        changePercent?: number;
+        changeAmount?: number;
+        priceFormatted?: string;
+        changeFormatted?: string;
+        changeAmountFormatted?: string;
+        marketCap?: string;
+        peRatio?: string;
+        tradingViewSymbol?: string;
+    };
+
+    type StockDetailsData = {
+        symbol: string;
+        company: string;
+        exchange: string;
+        currency: string;
+        country: string;
+        currentPrice: number;
+        previousClose: number;
+        dayHigh: number;
+        dayLow: number;
+        openPrice: number;
+        changeAmount: number;
+        changePercent: number;
+        priceFormatted: string;
+        changeFormatted: string;
+        changeAmountFormatted: string;
+        marketCap: number;
+        marketCapFormatted: string;
+        sharesOutstanding: number;
+        industry: string;
+        website: string;
+        logo: string;
+        ipo: string;
+        phone: string;
+        peRatio: string;
+        eps: string;
+        sentiment: string;
+        lastUpdated: string;
+    };
+
+    type SelectedStock = {
+        symbol: string;
+        company: string;
+        currentPrice?: number;
+    };
+
+    // ============================================
+    // FINNHUB API TYPES - FIX MISSING PROPERTIES
+    // ============================================
+
+    type FinnhubSearchResult = {
+        symbol: string;
+        description: string;
+        displaySymbol?: string;
+        type: string;
+        name?: string; // Add this for compatibility
+        exchange?: string; // Add this for compatibility
+    };
+
+    type FinnhubSearchResponse = {
+        count: number;
+        result: FinnhubSearchResult[];
+    };
+
+    type FinnhubQuoteResponse = {
+        c?: number; // Current price
+        d?: number; // Change
+        dp?: number; // Percent change
+        h?: number; // High
+        l?: number; // Low
+        o?: number; // Open
+        pc?: number; // Previous close
+        t?: number; // Timestamp
+        ticker?: string; // Add ticker field
+        exchange?: string; // Add exchange field
+    };
+
+    // ============================================
+    // PAGINATION TYPES
+    // ============================================
 
     type PaginationInfo = {
         currentPage: number;
@@ -52,6 +180,10 @@ declare global {
         pagination: PaginationInfo;
     };
 
+    // ============================================
+    // NEWS TYPES
+    // ============================================
+
     type MarketNewsArticle = {
         id: number;
         headline: string;
@@ -61,65 +193,7 @@ declare global {
         datetime: number;
         category: string;
         related: string;
-        image: string;
-    };
-
-    type WatchlistNewsProps = {
-        watchlistSymbols?: string[]; // Array of stock symbols to fetch news for
-        watchlistStocks?: StockWithData[]; // Array of watchlist stocks with full data
-        articlesPerStock?: number; // Number of articles per stock
-        initialNews?: MarketNewsArticle[]; // Initial news data
-    };
-
-    type SearchCommandProps = {
-        open?: boolean;
-        setOpen?: (open: boolean) => void;
-        renderAs?: 'button' | 'text';
-        buttonLabel?: string;
-        buttonVariant?: 'primary' | 'secondary';
-        className?: string;
-    };
-
-    type AlertFormData = {
-        alertName: string;
-        alertType: 'price' | 'volume';
-        condition: 'greater' | 'less';
-        threshold: string;
-    };
-
-    type AlertData = {
-        alertName: string;
-        symbol: string;
-        alertType: 'price' | 'volume';
-        condition: 'greater' | 'less';
-        threshold: number;
-    };
-
-    type AlertModalProps = {
-        isOpen: boolean;
-        onClose: () => void;
-        symbol: string;
-        company: string;
-        currentPrice?: number;
-        alertId?: string;
-        onCreateAlert?: (alertData: AlertData) => Promise<void>;
-        initialValues?: {
-            alertName?: string;
-            alertType?: 'price' | 'volume';
-            condition?: 'greater' | 'less';
-            threshold?: number;
-        };
-        action?: string;
-    };
-
-    type RecommendationData = {
-        strongBuy: number;
-        buy: number;
-        hold: number;
-        sell: number;
-        strongSell: number;
-        period: string;
-        symbol: string;
+        image?: string;
     };
 
     type RawNewsArticle = {
@@ -134,74 +208,32 @@ declare global {
         related?: string;
     };
 
-    type StockDetailsData = {
-        // Basic Information
+    type WatchlistNewsProps = {
+        watchlistSymbols?: string[];
+        watchlistStocks?: StockWithData[];
+        articlesPerStock?: number;
+        initialNews?: MarketNewsArticle[];
+        news?: MarketNewsArticle[];
+    };
+
+    // ============================================
+    // ALERT TYPES
+    // ============================================
+
+    type AlertFormData = {
+        alertName: string;
+        alertType: 'price' | 'volume';
+        condition: 'greater' | 'less';
+        threshold: string;
+    };
+
+    type AlertData = {
+        alertName: string;
         symbol: string;
-        company: string;
-        exchange: string;
-        currency: string;
-        country: string;
-
-        // Price Information
-        currentPrice: number;
-        previousClose: number;
-        dayHigh: number;
-        dayLow: number;
-        openPrice: number;
-
-        // Calculated Metrics
-        changeAmount: number;
-        changePercent: number;
-        priceFormatted: string;
-        changeFormatted: string;
-        changeAmountFormatted: string;
-
-        // Company Information
-        marketCap: number;
-        marketCapFormatted: string;
-        sharesOutstanding: number;
-
-        // Additional Data
-        industry: string;
-        website: string;
-        logo: string;
-        ipo: string;
-        phone: string;
-
-        // Financial Metrics
-        peRatio: string;
-        eps: string;
-        sentiment: string;
-
-        // Metadata
-        lastUpdated: string;
-    };
-
-    type StockDetailsProps = {
-        symbol: string | null;
-        onClose: () => void;
-        open: boolean;
-    };
-
-    type Stock = {
-        symbol: string;
-        name: string;
-        exchange: string;
-        type: string;
-    };
-
-    type StockWithWatchlistStatus = Stock & {
-        isInWatchlist: boolean;
-    };
-
-    type UserForNewsEmail = {
-        id: string;
-        email: string;
-        name: string;
-        country: string;
-        investmentGoals?: string;
-        riskTolerance?: string;
-        preferredIndustry?: string;
+        company?: string;
+        alertType: 'price' | 'volume' | 'upper' | 'lower';
+        condition?: 'greater' | 'less';
+        threshold: number | string;
     };
 
     type Alert = {
@@ -213,32 +245,54 @@ declare global {
         alertType: 'upper' | 'lower' | 'volume';
         threshold: number;
         changePercent?: number;
-        frequency: string;
+        frequency?: string;
     };
 
-    type StockWithData = {
-        _id: string;
-        userId: string;
-        symbol: string;
-        company: string;
-        addedAt: Date;
+    type AlertModalProps = {
+        isOpen?: boolean;
+        onClose?: () => void;
+        open?: boolean;
+        setOpenAction?: (open: boolean) => void;
+        symbol?: string;
+        company?: string;
         currentPrice?: number;
-        changePercent?: number;
-        changeAmount?: number;
-        priceFormatted?: string;
-        changeFormatted?: string;
-        changeAmountFormatted?: string;
-        marketCap?: string;
-        peRatio?: string;
-        tradingViewSymbol?: string;
+        alertId?: string;
+        alertData?: AlertData;
+        onCreateAlert?: (alertData: AlertData) => Promise<void>;
+        initialValues?: {
+            alertName?: string;
+            alertType?: 'price' | 'volume';
+            condition?: 'greater' | 'less';
+            threshold?: number;
+        };
+        action?: string;
     };
 
-    type FinnhubSearchResult = {
-        symbol: string;
-        description: string;
-        displaySymbol?: string;
-        type: string;
+    type AlertsListProps = {
+        alertData: Alert[] | undefined;
     };
+
+    // ============================================
+    // SEARCH & COMMAND TYPES - FIX SETOPEN & SETSTATEACTION
+    // ============================================
+
+    type SearchCommandProps = {
+        open?: boolean;
+        setOpenAction?: (open: boolean) => void; // Standard function signature
+        renderAs?: 'button' | 'text';
+        buttonLabel?: string;
+        label?: string;
+        buttonVariant?: 'primary' | 'secondary';
+        className?: string;
+        initialStocks?: StockWithWatchlistStatus[];
+    };
+
+    // FIX: Add SetStateAction type compatibility
+    type SetStateAction<T> = T | ((prevState: T) => T);
+
+    // ============================================
+    // COMPONENT PROPS TYPES
+    // ============================================
 
     type FormInputProps = {
         name: string;
@@ -267,6 +321,13 @@ declare global {
         required?: boolean;
     };
 
+    type CountrySelectProps = {
+        name: string;
+        label: string;
+        control: Control<any>;
+        error?: FieldError;
+        required?: boolean;
+    };
 
     type FooterLinkProps = {
         text: string;
@@ -274,6 +335,74 @@ declare global {
         href: string;
     };
 
+    type StockDetailsProps = {
+        symbol: string | null;
+        onClose: () => void;
+        open: boolean;
+    };
+
+    type StockDetailsPageProps = {
+        params: Promise<{
+            symbol: string;
+        }>;
+    };
+
+    type WatchlistButtonProps = {
+        symbol: string;
+        company: string;
+        isInWatchlist: boolean;
+        showTrashIcon?: boolean;
+        type?: 'button' | 'icon';
+        onWatchlistChange?: (symbol: string, isAdded: boolean) => void;
+    };
+
+    type WatchlistTableProps = {
+        watchlist: StockWithData[];
+    };
+
+    // ============================================
+    // FINANCIAL DATA TYPES
+    // ============================================
+
+    type QuoteData = {
+        c?: number;
+        dp?: number;
+        d?: number;
+        h?: number;
+        l?: number;
+        o?: number;
+        pc?: number;
+        t?: number;
+    };
+
+    type ProfileData = {
+        name?: string;
+        marketCapitalization?: number;
+        ticker?: string;
+        exchange?: string;
+        currency?: string;
+        country?: string;
+        industry?: string;
+        logo?: string;
+        weburl?: string;
+        phone?: string;
+        ipo?: string;
+        shareOutstanding?: number;
+    };
+
+    type FinancialsData = {
+        metric?: { [key: string]: number };
+    };
+
+    type RecommendationData = {
+        strongBuy: number;
+        buy: number;
+        hold: number;
+        sell: number;
+        strongSell: number;
+        period: string;
+        symbol: string;
+    };
 }
 
 export {};

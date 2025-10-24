@@ -1,9 +1,8 @@
-export const NAV_ITEMS : { href: string; label: string }[] = [
-
-    {href: '/', label: 'Dashboard'},
-    {href: '/search', label: 'Search'},
- //{href: '/watchlist', label: 'Watchlist'},
-]
+export const NAV_ITEMS = [
+    { href: '/', label: 'Dashboard' },
+    { href: '/search', label: 'Search' },
+    { href: '/watchlist', label: 'Watchlist' },
+];
 
 // Sign-up form select options
 export const INVESTMENT_GOALS = [
@@ -92,7 +91,7 @@ export const MARKET_OVERVIEW_WIDGET_CONFIG = {
     backgroundColor: '#141414', // background color
     width: '100%', // full width
     height: 600, // height in px
-    showSymbolLogo: false, // show logo next to symbols
+    showSymbolLogo: true, // show logo next to symbols
     showChart: true, // display mini chart
 };
 
@@ -131,7 +130,7 @@ export const MARKET_DATA_WIDGET_CONFIG = {
     width: '100%',
     height: 600,
     locale: 'en',
-    showSymbolLogo: false,
+    showSymbolLogo: true,
     colorTheme: 'dark',
     isTransparent: false,
     backgroundColor: '#0F0F0F',
