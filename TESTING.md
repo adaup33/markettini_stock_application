@@ -1,6 +1,6 @@
 # Test Suite Documentation
 
-This project includes comprehensive tests for all implementations and functions to ensure everything is running correctly.
+This project includes comprehensive tests for all implementations and functions to ensure core functionality, error handling, and edge cases work as expected.
 
 ## Running Tests
 
@@ -161,3 +161,14 @@ Tests are automatically run as part of the CI/CD pipeline to ensure code quality
 - [Jest Documentation](https://jestjs.io/docs/getting-started)
 - [Testing Library Documentation](https://testing-library.com/docs/)
 - [Next.js Testing Guide](https://nextjs.org/docs/testing)
+
+### Project Testing Conventions
+
+This project follows these testing conventions:
+- Use descriptive test names that explain the expected behavior
+- Group related tests using `describe` blocks
+- Mock external dependencies (database, API calls, auth)
+- Test both success and failure paths
+- Use `as RawNewsArticle` or similar type assertions to avoid linting errors
+- Add `@jest-environment node` comment for server-side tests
+- Keep test files organized to mirror source code structure
