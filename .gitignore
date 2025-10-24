@@ -44,3 +44,8 @@ next-env.d.ts
 #local for me
 CHANGES.md
 HOW_TO_Add_Server_Actions_with_Mongoose.md
+
+# local docs to ignore
+sdlc.md
+
+first and last one please

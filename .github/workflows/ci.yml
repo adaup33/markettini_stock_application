@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Render Mermaid diagrams
+        run: |
+          mkdir -p docs/images
+          npx @mermaid-js/mermaid-cli -i diagrams/architecture.mmd -o docs/images/architecture.png
+          npx @mermaid-js/mermaid-cli -i diagrams/watchlist-erd.mmd -o docs/images/watchlist-erd.png
+
+      - name: Render PlantUML diagram
+        # Use the official plantuml docker image to render .puml to png
+        run: |
+          mkdir -p docs/images
+          docker run --rm -v "${{ github.workspace }}:/workspace" plantuml/plantuml -tpng /workspace/diagrams/signup-sequence.puml -o /workspace/docs/images
+
+      - name: Upload rendered diagrams as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagrams
+          path: docs/images
+
+      - name: Wait for MongoDB
+        run: |
+          echo "Waiting for MongoDB to be ready..."
+          sleep 15
+
+      - name: DB smoke test
+        env:
+          MONGODB_URI: mongodb://localhost:27017/ci_test
+        run: npm run test:db
