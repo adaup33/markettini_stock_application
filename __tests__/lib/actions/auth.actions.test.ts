@@ -40,8 +40,8 @@ describe('Auth Actions', () => {
         user: { id: 'user123', email: 'test@example.com', name: 'Test User' },
       };
 
-      (auth.api.signUpEmail as jest.Mock).mockResolvedValue(mockResponse);
-      (inngest.send as jest.Mock).mockResolvedValue({ ids: ['event123'] });
+      (auth.api.signUpEmail as unknown as jest.Mock).mockResolvedValue(mockResponse);
+      (inngest.send as unknown as jest.Mock).mockResolvedValue({ ids: ['event123'] });
 
       const formData: SignUpFormData = {
         email: 'test@example.com',
@@ -78,7 +78,7 @@ describe('Auth Actions', () => {
     });
 
     it('should handle sign up failure', async () => {
-      (auth.api.signUpEmail as jest.Mock).mockRejectedValue(new Error('Sign up failed'));
+      (auth.api.signUpEmail as unknown as jest.Mock).mockRejectedValue(new Error('Sign up failed'));
 
       const formData: SignUpFormData = {
         email: 'test@example.com',
@@ -98,7 +98,7 @@ describe('Auth Actions', () => {
     });
 
     it('should not send inngest event if sign up response is null', async () => {
-      (auth.api.signUpEmail as jest.Mock).mockResolvedValue(null);
+      (auth.api.signUpEmail as unknown as jest.Mock).mockResolvedValue(null);
 
       const formData: SignUpFormData = {
         email: 'test@example.com',
@@ -124,7 +124,7 @@ describe('Auth Actions', () => {
         session: { id: 'session123' },
       };
 
-      (auth.api.signInEmail as jest.Mock).mockResolvedValue(mockResponse);
+      (auth.api.signInEmail as unknown as jest.Mock).mockResolvedValue(mockResponse);
 
       const formData: SignInFormData = {
         email: 'test@example.com',
@@ -144,7 +144,7 @@ describe('Auth Actions', () => {
     });
 
     it('should handle sign in failure', async () => {
-      (auth.api.signInEmail as jest.Mock).mockRejectedValue(new Error('Invalid credentials'));
+      (auth.api.signInEmail as unknown as jest.Mock).mockRejectedValue(new Error('Invalid credentials'));
 
       const formData: SignInFormData = {
         email: 'test@example.com',
@@ -158,7 +158,7 @@ describe('Auth Actions', () => {
     });
 
     it('should handle network errors during sign in', async () => {
-      (auth.api.signInEmail as jest.Mock).mockRejectedValue(new Error('Network error'));
+      (auth.api.signInEmail as unknown as jest.Mock).mockRejectedValue(new Error('Network error'));
 
       const formData: SignInFormData = {
         email: 'test@example.com',
@@ -174,7 +174,7 @@ describe('Auth Actions', () => {
 
   describe('signOut', () => {
     it('should successfully sign out a user', async () => {
-      (auth.api.signOut as jest.Mock).mockResolvedValue(undefined);
+      (auth.api.signOut as unknown as jest.Mock).mockResolvedValue(undefined);
 
       const result = await signOut();
 
@@ -183,7 +183,7 @@ describe('Auth Actions', () => {
     });
 
     it('should handle sign out failure', async () => {
-      (auth.api.signOut as jest.Mock).mockRejectedValue(new Error('Sign out failed'));
+      (auth.api.signOut as unknown as jest.Mock).mockRejectedValue(new Error('Sign out failed'));
 
       const result = await signOut();
 
@@ -194,7 +194,7 @@ describe('Auth Actions', () => {
     });
 
     it('should pass headers to signOut API', async () => {
-      (auth.api.signOut as jest.Mock).mockResolvedValue(undefined);
+      (auth.api.signOut as unknown as jest.Mock).mockResolvedValue(undefined);
 
       await signOut();
 

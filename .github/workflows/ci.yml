@@ -27,6 +27,12 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # Install Chromium for Puppeteer/Mermaid CLI
+      - name: Install Chromium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser
+
       # Lint is non-blocking so CI continues even if lint reports errors
       - name: Lint (non-blocking)
         run: npm run lint
@@ -41,10 +47,13 @@ jobs:
         run: npm run build
 
       - name: Render Mermaid diagrams
+        env:
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
+          PUPPETEER_EXECUTABLE_PATH: "/usr/bin/chromium-browser"
         run: |
           mkdir -p docs/images
-          npx @mermaid-js/mermaid-cli -i diagrams/architecture.mmd -o docs/images/architecture.png
-          npx @mermaid-js/mermaid-cli -i diagrams/watchlist-erd.mmd -o docs/images/watchlist-erd.png
+          npx @mermaid-js/mermaid-cli --puppeteerConfigFile puppeteer-config.json -i diagrams/architecture.mmd -o docs/images/architecture.png
+          npx @mermaid-js/mermaid-cli --puppeteerConfigFile puppeteer-config.json -i diagrams/watchlist-erd.mmd -o docs/images/watchlist-erd.png
 
       - name: Render PlantUML diagram
         # Use the official plantuml docker image to render .puml to png
