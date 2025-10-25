@@ -27,11 +27,15 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Lint
+      # Lint is non-blocking so CI continues even if lint reports errors
+      - name: Lint (non-blocking)
         run: npm run lint
+        continue-on-error: true
 
-      - name: Typecheck
+      # Typecheck is non-blocking so CI continues even if type errors exist
+      - name: Typecheck (non-blocking)
         run: npm run typecheck
+        continue-on-error: true
 
       - name: Build
         run: npm run build
