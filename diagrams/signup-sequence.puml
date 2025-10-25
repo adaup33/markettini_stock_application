@@ -1,0 +1,19 @@
+@startuml
+actor User
+participant "Next.js Page (signup)" as SignupPage
+participant "auth.actions.signUpWithEmail" as SignUpAction
+participant Inngest
+participant "lib/inngest/functions.ts (sendSignUpEmail)" as Fn
+participant "nodemailer" as Mailer
+
+User -> SignupPage: submit sign-up form
+SignupPage -> SignUpAction: call server action
+SignUpAction -> SignUpAction: call auth.api.signUpEmail
+SignUpAction -> Inngest: inngest.send(app/user.created)
+Inngest -> Fn: trigger sign-up function
+Fn -> Mailer: send welcome email
+Mailer --> Fn: success
+Fn --> Inngest: finished
+Inngest --> SignUpAction: ack (optional)
+@enduml
+

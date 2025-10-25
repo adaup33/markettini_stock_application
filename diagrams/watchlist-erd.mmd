@@ -1,0 +1,15 @@
+classDiagram
+  class User{
+    +String id
+    +String email
+    +String name
+  }
+  class Watchlist{
+    +String _id
+    +String userId
+    +String symbol
+    +String company
+    +Date addedAt
+  }
+  User <|-- Watchlist : has
+
