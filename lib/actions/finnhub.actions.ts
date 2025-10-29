@@ -7,7 +7,7 @@ import { cache } from 'react';
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
 const NEXT_PUBLIC_FINNHUB_API_KEY = process.env.NEXT_PUBLIC_FINNHUB_API_KEY ?? '';
 
-async function fetchJSON<T>(url: string, revalidateSeconds?: number): Promise<T> {
+export async function fetchJSON<T>(url: string, revalidateSeconds?: number): Promise<T> {
     const options: RequestInit & { next?: { revalidate?: number } } = revalidateSeconds
         ? { cache: 'force-cache', next: { revalidate: revalidateSeconds } }
         : { cache: 'no-store' };
@@ -19,8 +19,6 @@ async function fetchJSON<T>(url: string, revalidateSeconds?: number): Promise<T>
     }
     return (await res.json()) as T;
 }
-
-export { fetchJSON };
 
 export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> {
     try {
@@ -177,3 +175,63 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
         return [];
     }
 });
+
+// New: fetch live quotes for symbols
+export async function getQuotes(symbols: string[]): Promise<Record<string, { price: string; change: string; percent: string }>> {
+    try {
+        const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
+        if (!token) {
+            console.error('getQuotes: FINNHUB API key is not configured');
+            return {};
+        }
+
+        const clean = (symbols || [])
+            .map((s) => String(s || '').trim().toUpperCase())
+            .filter((s) => Boolean(s));
+
+        if (clean.length === 0) return {};
+
+        const results = await Promise.all(
+            clean.map(async (sym) => {
+                try {
+                    const url = `${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(sym)}&token=${token}`;
+                    // short cache for quotes
+                    const data = await fetchJSON<any>(url, 15);
+                    return { sym, data };
+                } catch (e) {
+                    console.error('getQuotes error for', sym, e);
+                    return { sym, data: null };
+                }
+            })
+        );
+
+        const mapped: Record<string, { price: string; change: string; percent: string }> = {};
+        for (const r of results) {
+            const sym = r.sym;
+            const d = r.data;
+            if (!d) {
+                mapped[sym] = { price: '-', change: '-', percent: '-' };
+                continue;
+            }
+
+            const priceNum = typeof d.c === 'number' ? d.c : Number(d.c);
+            const changeNum = typeof d.d === 'number' ? d.d : Number(d.d);
+            const percentNum = typeof d.dp === 'number' ? d.dp : Number(d.dp);
+
+            const price = Number.isFinite(priceNum) ? `$${priceNum.toFixed(2)}` : '-';
+            const change = Number.isFinite(changeNum)
+                ? (changeNum >= 0 ? `+${changeNum.toFixed(2)}` : `${changeNum.toFixed(2)}`)
+                : '-';
+            const percent = Number.isFinite(percentNum)
+                ? (percentNum >= 0 ? `+${percentNum.toFixed(2)}%` : `${percentNum.toFixed(2)}%`)
+                : '-';
+
+            mapped[sym] = { price, change, percent };
+        }
+
+        return mapped;
+    } catch (err) {
+        console.error('getQuotes error:', err);
+        return {};
+    }
+}
