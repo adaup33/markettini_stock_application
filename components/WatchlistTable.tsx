@@ -9,7 +9,6 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import WatchlistButton from "./WatchlistButton";
 
 const WATCHLIST_TABLE_HEADER = [
     "Company",
@@ -42,39 +41,7 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
     const [rows, setRows] = useState<WatchlistRow[]>([]);
     const [loading, setLoading] = useState(false);
 
-    // Sample data fallback
-    const sampleData: WatchlistRow[] = [
-        {
-            company: "Apple Inc.",
-            symbol: "AAPL",
-            price: "$178.72",
-            change: "+2.45%",
-            marketCap: "$2.78T",
-            peRatio: "29.3",
-            alert: "Active",
-            action: "View",
-        },
-        {
-            company: "Microsoft Corporation",
-            symbol: "MSFT",
-            price: "$378.91",
-            change: "+1.23%",
-            marketCap: "$2.81T",
-            peRatio: "35.2",
-            alert: "Active",
-            action: "View",
-        },
-        {
-            company: "Tesla, Inc.",
-            symbol: "TSLA",
-            price: "$242.84",
-            change: "-0.89%",
-            marketCap: "$771B",
-            peRatio: "67.8",
-            alert: "None",
-            action: "View",
-        },
-    ];
+    // No sample fallback — show empty state when no rows
 
     useEffect(() => {
         let mounted = true;
@@ -87,7 +54,11 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
                 }`;
                 const res = await fetch(url);
 
-                if (!res.ok) throw new Error("Failed to fetch watchlist");
+                if (!res.ok) {
+                    console.error('Failed to fetch watchlist, status:', res.status);
+                    if (mounted) setRows([]);
+                    return;
+                }
 
                 const json = await res.json();
 
@@ -101,15 +72,15 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
                         peRatio: d.peRatio || "-",
                         alert: d.alert || "-",
                         action: "View",
-                        isStarred: true,
                     }));
-                    setRows(mapped.length ? mapped : sampleData);
+                    setRows(mapped);
                 } else {
-                    setRows(sampleData);
+                    // no data
+                    setRows([]);
                 }
             } catch (err) {
                 console.error("load watchlist error", err);
-                setRows(sampleData);
+                if (mounted) setRows([]);
             } finally {
                 if (mounted) setLoading(false);
             }
@@ -117,8 +88,23 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
 
         load();
 
+        // Poll every 15 seconds for live updates
+        const interval = setInterval(() => {
+            load();
+        }, 15000);
+
+        // Refresh on window focus or when document becomes visible
+        const onVisibility = () => {
+            if (document.visibilityState === 'visible') load();
+        };
+        window.addEventListener('focus', load);
+        document.addEventListener('visibilitychange', onVisibility);
+
         return () => {
             mounted = false;
+            clearInterval(interval);
+            window.removeEventListener('focus', load);
+            document.removeEventListener('visibilitychange', onVisibility);
         };
     }, [email]);
 
@@ -141,16 +127,31 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
                 );
             }
 
-            // Update local state
-            setRows((prev) =>
-                prev.map((r) => (r.symbol === symbol ? { ...r, isStarred: next } : r))
-            );
+            // After change, refetch immediately to reflect authoritative state
+            const url = `/api/watchlist${email ? `?email=${encodeURIComponent(email)}` : ""}`;
+            const res = await fetch(url);
+            if (res.ok) {
+                const json = await res.json();
+                if (Array.isArray(json.data)) {
+                    const mapped = json.data.map((d: any) => ({
+                        company: d.company || d.symbol,
+                        symbol: d.symbol,
+                        price: d.price || "-",
+                        change: d.change || "-",
+                        marketCap: d.marketCap || "-",
+                        peRatio: d.peRatio || "-",
+                        alert: d.alert || "-",
+                        action: "View",
+                    }));
+                    setRows(mapped);
+                }
+            }
         } catch (err) {
             console.error("watchlist toggle error", err);
         }
     };
 
-    const dataToRender = rows.length ? rows : sampleData;
+    const dataToRender = rows;
 
     if (loading) {
         return <div className="w-full p-4 text-center">Loading watchlist...</div>;
@@ -169,29 +170,30 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {dataToRender.map((row) => (
-                        <TableRow key={row.symbol}>
-                            <TableCell className="text-left flex items-center gap-2">
-                                <WatchlistButton
-                                    symbol={row.symbol}
-                                    isInWatchlist={!!row.isStarred}
-                                    type="icon"
-                                    onWatchlistChange={handleWatchlistChange} company={""}                                />
-                                <span>{row.company}</span>
+                    {dataToRender.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={8} className="text-center py-6 text-sm text-gray-400">
+                                Your watchlist is empty — add stocks from Search or a Stock page.
                             </TableCell>
-                            <TableCell className="text-left">{row.symbol}</TableCell>
-                            <TableCell className="text-left">{row.price}</TableCell>
-                            <TableCell className="text-left">{row.change}</TableCell>
-                            <TableCell className="text-left">{row.marketCap}</TableCell>
-                            <TableCell className="text-left">{row.peRatio}</TableCell>
-                            <TableCell className="text-left">{row.alert}</TableCell>
-                            <TableCell className="text-left">{row.action}</TableCell>
                         </TableRow>
-                    ))}
+                    ) : (
+                        dataToRender.map((row) => (
+                            <TableRow key={row.symbol}>
+                                <TableCell className="text-left">{row.company}</TableCell>
+                                <TableCell className="text-left">{row.symbol}</TableCell>
+                                <TableCell className="text-left">{row.price}</TableCell>
+                                <TableCell className="text-left">{row.change}</TableCell>
+                                <TableCell className="text-left">{row.marketCap}</TableCell>
+                                <TableCell className="text-left">{row.peRatio}</TableCell>
+                                <TableCell className="text-left">{row.alert}</TableCell>
+                                <TableCell className="text-left">{row.action}</TableCell>
+                            </TableRow>
+                        ))
+                    )}
                 </TableBody>
-            </Table>
-        </div>
-    );
-};
+             </Table>
+         </div>
+     );
+ };
 
-export default WatchlistTable;
+ export default WatchlistTable;
