@@ -34,14 +34,25 @@ const SignUp = () => {
     const onSubmit = async (data: SignUpFormData) => {
         try {
             const result = await signUpWithEmail(data);
-            if(result.success) router.push('/');
+
+            if (result.success) {
+                toast.success('Account created successfully');  // ✅ Success feedback
+                router.push('/');
+            } else {
+                // ✅ Handle API validation errors
+                toast.error('Sign up failed', {
+                    description: result.error || 'Failed to create account'
+                });
+            }
         } catch (e) {
-            console.error(e);
+            // ✅ Handle unexpected errors
+            console.error('Sign up error:', e);
             toast.error('Sign up failed', {
-                description: e instanceof Error ? e.message : 'Failed to create an account.'
-            })
+                description: e instanceof Error ? e.message : 'An unexpected error occurred'
+            });
         }
-    }
+    };
+
 
     return (
         <>

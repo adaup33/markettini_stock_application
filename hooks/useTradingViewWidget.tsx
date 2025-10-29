@@ -1,30 +1,48 @@
 'use client';
-import { useEffect, useRef }     from "react";
+import { useEffect, useRef, useMemo } from "react";
 
-const useTradingViewWidget = (scriptUrl: string, config: Record<string, unknown>, height = 600) => {
+const useTradingViewWidget = (
+    scriptUrl: string,
+    config: Record<string, unknown>,
+    height = 600
+) => {
     const containerRef = useRef<HTMLDivElement | null>(null);
 
-    useEffect(() => {
-        if (!containerRef.current) return;
-        if (containerRef.current.dataset.loaded) return;
-        containerRef.current.innerHTML = `<div class="tradingview-widget-container__widget" style="width: 100%; height: ${height}px;"></div>`;
+    // Stabilize config to prevent unnecessary re-renders
+    const stableConfig = useMemo(
+        () => JSON.stringify(config),
+        [config]
+    );
 
+    useEffect(() => {
+        // ✅ FIX: Capture ref at effect start to avoid stale closure
+        const container = containerRef.current;
+
+        if (!container) return;
+        if (container.dataset.loaded) return;
+
+        // Create widget container
+        container.innerHTML = `<div class="tradingview-widget-container__widget" style="width: 100%; height: ${height}px;"></div>`;
+
+        // Create script
         const script = document.createElement("script");
         script.src = scriptUrl;
         script.async = true;
-        script.innerHTML = JSON.stringify(config);
+        script.textContent = stableConfig;  // ✅ FIX: Use textContent instead of innerHTML
 
-        containerRef.current.appendChild(script);
-        containerRef.current.dataset.loaded = 'true';
+        container.appendChild(script);
+        container.dataset.loaded = 'true';
 
+        // ✅ FIX: Use captured container reference in cleanup
         return () => {
-            if(containerRef.current) {
-                containerRef.current.innerHTML = '';
-                delete containerRef.current.dataset.loaded;
+            if (container) {
+                container.innerHTML = '';
+                delete container.dataset.loaded;
             }
         }
-    }, [scriptUrl, config, height])
+    }, [scriptUrl, stableConfig, height]);  // ✅ FIX: Use stableConfig instead of config
 
     return containerRef;
 }
-export default useTradingViewWidget
+
+export default useTradingViewWidget;

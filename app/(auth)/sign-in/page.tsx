@@ -26,14 +26,24 @@ const SignIn = () => {
     const onSubmit = async (data: SignInFormData) => {
         try {
             const result = await signInWithEmail(data);
-            if(result.success) router.push('/');
+
+            if (result.success) {
+                toast.success('Signed in successfully');  // ✅ Success feedback
+                router.push('/');
+            } else {
+                // ✅ Handle API validation errors
+                toast.error('Sign in failed', {
+                    description: result.error || 'Invalid email or password'
+                });
+            }
         } catch (e) {
-            console.error(e);
+            // ✅ Handle unexpected errors (network issues, etc.)
+            console.error('Sign in error:', e);
             toast.error('Sign in failed', {
-                description: e instanceof Error ? e.message : 'Failed to sign in.'
-            })
+                description: e instanceof Error ? e.message : 'An unexpected error occurred'
+            });
         }
-    }
+    };
 
     return (
         <>
