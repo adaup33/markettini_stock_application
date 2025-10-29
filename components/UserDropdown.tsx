@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
     DropdownMenu,
@@ -21,13 +21,15 @@ const UserDropdown = ({ user, initialStocks }: {user: User, initialStocks: Stock
         router.push("/sign-in");
     }
 
+    const initial = user?.name ? String(user.name[0] || '').toUpperCase() : '?';
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-3 text-gray-4 hover:text-yellow-500">
                     <Avatar className="h-8 w-8">
                         <AvatarFallback className="bg-yellow-500 text-yellow-900 text-sm font-bold">
-                            {user.name[0]}
+                            {initial}
                         </AvatarFallback>
                     </Avatar>
                     <div className="hidden md:flex flex-col items-start">
@@ -42,7 +44,7 @@ const UserDropdown = ({ user, initialStocks }: {user: User, initialStocks: Stock
                     <div className="flex relative items-center gap-3 py-2">
                         <Avatar className="h-10 w-10">
                             <AvatarFallback className="bg-yellow-500 text-yellow-900 text-sm font-bold">
-                                {user.name[0]}
+                                {initial}
                             </AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col">

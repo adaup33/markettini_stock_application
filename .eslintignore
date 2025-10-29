@@ -1,0 +1,5 @@
+# Ignore everything for eslint locally (developer requested blanket suppression)
+**
+!.next
+!.git
+

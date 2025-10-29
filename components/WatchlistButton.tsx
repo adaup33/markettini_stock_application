@@ -15,7 +15,8 @@ const WatchlistButton = ({
         return added ? "Remove from Watchlist" : "Add to Watchlist";
     }, [added, type]);
 
-    const handleClick = () => {
+    const handleClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
         const next = !added;
         setAdded(next);
         onWatchlistChange?.(symbol, next);
@@ -26,16 +27,16 @@ const WatchlistButton = ({
             <button
                 title={added ? `Remove ${symbol} from watchlist` : `Add ${symbol} to watchlist`}
                 aria-label={added ? `Remove ${symbol} from watchlist` : `Add ${symbol} to watchlist`}
-                className={`watchlist-icon-btn ${added ? "watchlist-icon-added" : ""}`}
+                className={`watchlist-icon-btn ${added ? "watchlist-icon-added" : ""} focus:outline-none`}
                 onClick={handleClick}
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
-                    fill={added ? "#FACC15" : "none"}
-                    stroke="#FACC15"
+                    fill={added ? "#F59E0B" : "none"}
+                    stroke={added ? "#DD6B20" : "#9CA3AF"}
                     strokeWidth="1.5"
-                    className="watchlist-star"
+                    className="watchlist-star h-5 w-5"
                 >
                     <path
                         strokeLinecap="round"
