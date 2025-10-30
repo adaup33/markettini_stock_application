@@ -6,6 +6,7 @@ import {Button} from "@/components/ui/button";
 import {Loader2,  TrendingUp} from "lucide-react";
 import Link from "next/link";
 import {useDebounce} from "@/hooks/useDebounce";
+import WatchlistButton from "@/components/WatchlistButton";
 
 export default function SearchCommand({ renderAs = 'button', label = 'Add stock', initialStocks }: SearchCommandProps) {
     const [open, setOpen] = useState(false)
@@ -123,8 +124,29 @@ export default function SearchCommand({ renderAs = 'button', label = 'Add stock'
                                                 {stock.symbol} | {stock.exchange } | {stock.type}
                                             </div>
                                         </div>
-                                        {/*<Star />*/}
                                     </Link>
+                                    {/* Star control to add/remove directly from search results */}
+                                    <div className="ml-2">
+                                        <WatchlistButton
+                                            symbol={stock.symbol}
+                                            company={stock.name || stock.symbol}
+                                            isInWatchlist={!!stock.isInWatchlist}
+                                            type="icon"
+                                            onWatchlistChange={async (symbol, isAdded) => {
+                                                try {
+                                                    if (isAdded) {
+                                                        await fetch('/api/watchlist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ symbol }) });
+                                                    } else {
+                                                        await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, { method: 'DELETE' });
+                                                    }
+                                                    // update local view
+                                                    setStocks((prev) => prev.map((s) => s.symbol === symbol ? { ...s, isInWatchlist: isAdded } : s));
+                                                } catch (err) {
+                                                    console.error('watchlist toggle from search error', err);
+                                                }
+                                            }}
+                                        />
+                                    </div>
                                 </li>
                             ))}
                         </ul>
