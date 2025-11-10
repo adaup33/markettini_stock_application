@@ -37,20 +37,19 @@ export default function SearchCommand({ renderAs = 'button', label = 'Add stock'
     }, [initialStocks, isSearchMode]);
 
     const handleSearch = useCallback(async () => {
-        if(!isSearchMode) return setStocks(initialStocks ?? []);
+        if(!isSearchMode) {
+            setStocks(initialStocks ?? []);
+            return;
+        }
 
         setLoading(true)
         try {
-            // Try a client-side fetch fallback to an API route if available. This keeps the client
-            // component decoupled from server-only actions. If no API exists the fetch will fail
-            // gracefully and we'll show no results.
             const trimmed = searchTerm.trim();
             if (!trimmed) {
                 setStocks(initialStocks ?? []);
                 return;
             }
 
-            // Attempt to call a client API endpoint (optional - implement server route if desired)
             const res = await fetch(`/api/search-stocks?q=${encodeURIComponent(trimmed)}`);
             if (res.ok) {
                 const data = await res.json();
@@ -64,12 +63,13 @@ export default function SearchCommand({ renderAs = 'button', label = 'Add stock'
         } finally {
             setLoading(false)
         }
-    }, [isSearchMode, searchTerm, initialStocks]);
+    }, [isSearchMode, searchTerm, initialStocks]); // include all external values used inside
 
+    // create a stable debounced function; useDebounce now keeps callback latest via ref
     const debouncedSearch = useDebounce(handleSearch, 300);
 
     useEffect(() => {
-        // Include debouncedSearch in deps to satisfy exhaustive-deps and to ensure stability
+        // Run debounced search when searchTerm changes. debouncedSearch is stable across renders.
         debouncedSearch();
     }, [searchTerm, debouncedSearch]);
 
@@ -133,16 +133,20 @@ export default function SearchCommand({ renderAs = 'button', label = 'Add stock'
                                             isInWatchlist={!!stock.isInWatchlist}
                                             type="icon"
                                             onWatchlistChange={async (symbol, isAdded) => {
+                                                // Optimistic update: update UI first
+                                                setStocks((prev) => prev.map((s) => s.symbol === symbol ? { ...s, isInWatchlist: isAdded } : s));
                                                 try {
                                                     if (isAdded) {
-                                                        await fetch('/api/watchlist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ symbol }) });
+                                                        const res = await fetch('/api/watchlist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ symbol }) });
+                                                        if (!res.ok) throw new Error('Failed to add');
                                                     } else {
-                                                        await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, { method: 'DELETE' });
+                                                        const res = await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, { method: 'DELETE' });
+                                                        if (!res.ok) throw new Error('Failed to remove');
                                                     }
-                                                    // update local view
-                                                    setStocks((prev) => prev.map((s) => s.symbol === symbol ? { ...s, isInWatchlist: isAdded } : s));
                                                 } catch (err) {
                                                     console.error('watchlist toggle from search error', err);
+                                                    // Revert optimistic update on failure
+                                                    setStocks((prev) => prev.map((s) => s.symbol === symbol ? { ...s, isInWatchlist: !isAdded } : s));
                                                 }
                                             }}
                                         />

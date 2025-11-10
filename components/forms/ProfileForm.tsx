@@ -81,7 +81,7 @@ const ProfileForm = ({ user }: ProfileFormProps) => {
             <InputField
                 name="name"
                 label="Full Name"
-                placeholder="John Doe"
+                placeholder="Please enter your Name"
                 register={register}
                 error={errors.name}
                 validation={{ required: 'Full name is required', minLength: 2 }}

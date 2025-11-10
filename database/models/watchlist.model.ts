@@ -5,6 +5,10 @@ export interface WatchlistItem extends Document {
     symbol: string;
     company: string;
     addedAt: Date;
+    // Optional numeric fields for table and calculations
+    marketCapB?: number; // stored in billions
+    peRatio?: number;
+    alertPrice?: number; // per-row alert price target
 }
 
 const WatchlistSchema = new Schema<WatchlistItem>(
@@ -13,6 +17,10 @@ const WatchlistSchema = new Schema<WatchlistItem>(
         symbol: { type: String, required: true, uppercase: true, trim: true },
         company: { type: String, required: true, trim: true },
         addedAt: { type: Date, default: Date.now },
+        // Optional numeric fields: store in billions, numbers for type safety
+        marketCapB: { type: Number, required: false, default: undefined },
+        peRatio: { type: Number, required: false, default: undefined },
+        alertPrice: { type: Number, required: false, default: undefined },
     },
     { timestamps: false }
 );

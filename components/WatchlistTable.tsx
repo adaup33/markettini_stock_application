@@ -88,24 +88,52 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
 
         load();
 
-        // Poll every 15 seconds for live updates
-        const interval = setInterval(() => {
-            load();
-        }, 15000);
+        // WebSocket connection to receive live updates (preferred). Don't open WS during tests.
+        let ws: WebSocket | null = null;
+        if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'test') {
+            try {
+                const wsUrl = (process.env.NEXT_PUBLIC_WS_URL) ? process.env.NEXT_PUBLIC_WS_URL : `ws://${window.location.hostname}:${process.env.NEXT_PUBLIC_WS_PORT ?? 4001}`;
+                ws = new WebSocket(wsUrl);
+                ws.addEventListener('message', (ev) => {
+                    try {
+                        const msg = JSON.parse(ev.data);
+                        if (msg?.type === 'watchlist:update') {
+                            // If email is present in the payload and matches current user (or payload email undefined), refresh
+                            const payloadEmail = msg.payload?.email;
+                            if (!payloadEmail || !email || payloadEmail === email) {
+                                load();
+                            }
+                        }
+                    } catch (e) {
+                        console.error('ws message parse error', e);
+                    }
+                });
+            } catch (e) {
+                // WS connection failed — we'll keep polling as a fallback
+                console.warn('WS connection failed, falling back to polling', e);
+                ws = null;
+            }
+        }
 
-        // Refresh on window focus or when document becomes visible
-        const onVisibility = () => {
-            if (document.visibilityState === 'visible') load();
-        };
-        window.addEventListener('focus', load);
-        document.addEventListener('visibilitychange', onVisibility);
+         // Poll every 15 seconds for live updates
+         const interval = setInterval(() => {
+             load();
+         }, 15000);
 
-        return () => {
-            mounted = false;
-            clearInterval(interval);
-            window.removeEventListener('focus', load);
-            document.removeEventListener('visibilitychange', onVisibility);
-        };
+         // Refresh on window focus or when document becomes visible
+         const onVisibility = () => {
+             if (document.visibilityState === 'visible') load();
+         };
+         window.addEventListener('focus', load);
+         document.addEventListener('visibilitychange', onVisibility);
+
+         return () => {
+             mounted = false;
+             clearInterval(interval);
+             window.removeEventListener('focus', load);
+             document.removeEventListener('visibilitychange', onVisibility);
+             if (ws && ws.readyState === WebSocket.OPEN) ws.close();
+         };
     }, [email]);
 
     const handleWatchlistChange = async (symbol: string, next: boolean) => {

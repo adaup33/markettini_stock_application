@@ -1,0 +1,91 @@
+%% er_diagram_mermaid.mmd - Mermaid ER diagram for mermaid.live
+%% This diagram mirrors the JSON schemas you provided (accounts, sessions, users, watchlists)
+%% and includes alerts/alert_triggers/watchlist_snapshots for completeness.
+
+erDiagram
+  USERS {
+    CHAR _id PK "Mongo ObjectId"
+    VARCHAR name
+    VARCHAR email
+    BOOLEAN emailVerified
+    VARCHAR country
+    VARCHAR investmentGoals
+    VARCHAR riskTolerance
+    VARCHAR preferredIndustry
+    TIMESTAMP createdAt
+    TIMESTAMP updatedAt
+  }
+
+  ACCOUNTS {
+    CHAR _id PK "Mongo ObjectId"
+    VARCHAR accountId "string accountId (optional external id)"
+    CHAR userId FK "-> users._id"
+    VARCHAR providerId
+    VARCHAR password
+    TIMESTAMP createdAt
+    TIMESTAMP updatedAt
+  }
+
+  SESSIONS {
+    CHAR _id PK "Mongo ObjectId"
+    CHAR userId FK "-> users._id"
+    VARCHAR token "session token"
+    TIMESTAMP createdAt
+    TIMESTAMP expiresAt
+    TIMESTAMP updatedAt
+    VARCHAR ipAddress
+    TEXT userAgent
+  }
+
+  WATCHLISTS {
+    CHAR _id PK "Mongo ObjectId"
+    INTEGER __v
+    CHAR userId FK "-> users._id"
+    VARCHAR symbol
+    VARCHAR company
+    TIMESTAMP addedAt
+  }
+
+  ALERTS {
+    CHAR _id PK "Mongo ObjectId"
+    CHAR userId FK "-> users._id"
+    VARCHAR symbol
+    VARCHAR operator "one of >, <, >=, <=, =="
+    DOUBLE threshold
+    BOOLEAN active
+    TEXT note
+    TIMESTAMP createdAt
+    TIMESTAMP lastTriggeredAt
+  }
+
+  ALERT_TRIGGERS {
+    CHAR _id PK
+    CHAR alertId FK "-> alerts._id"
+    TIMESTAMP triggeredAt
+    DOUBLE priceAtTrigger
+    TEXT message
+  }
+
+  WATCHLIST_SNAPSHOTS {
+    CHAR _id PK
+    CHAR watchlistId FK "-> watchlists._id"
+    TIMESTAMP capturedAt
+    DOUBLE price
+    DOUBLE changeAmount
+    DOUBLE changePercent
+  }
+
+  %% Relationships (cardinalities)
+  USERS ||--o{ ACCOUNTS : "has"
+  USERS ||--o{ SESSIONS : "maintains"
+  USERS ||--o{ WATCHLISTS : "owns"
+  USERS ||--o{ ALERTS : "creates"
+  WATCHLISTS ||--o{ WATCHLIST_SNAPSHOTS : "captures"
+  ALERTS ||--o{ ALERT_TRIGGERS : "fires"
+
+  %% Optional logical association: alerts reference (userId, symbol) so they relate to a watchlist item for the same user and symbol
+  WATCHLISTS ||--o{ ALERTS : "related by (userId, symbol) (optional)"
+
+  %% Notes for mermaid.live rendering
+  %% Paste this entire file into https://mermaid.live/ (choose "ER Diagram") to render visually.
+

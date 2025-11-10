@@ -69,7 +69,7 @@ const SignIn = () => {
                     validation={{ required: 'Password is required', minLength: 8 }}
                 />
 
-                <Button type="submit" disabled={isSubmitting} className="yellow-btn w-full mt-5">
+                <Button type="submit" disabled={isSubmitting} className="w-full mt-5 bg-emerald-600 hover:bg-emerald-500">
                     {isSubmitting ? 'Signing In' : 'Sign In'}
                 </Button>
 

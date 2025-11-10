@@ -36,6 +36,9 @@ export interface WatchlistRow {
     symbol: string;
     company: string;
     addedAt: Date;
+    marketCapB?: number | null;
+    peRatio?: number | null;
+    alertPrice?: number | null;
 }
 
 async function resolveUserIdByEmail(email?: string): Promise<string | null> {
@@ -64,6 +67,9 @@ export async function getWatchlistByEmail(email?: string): Promise<WatchlistRow[
             symbol: String(it.symbol),
             company: String(it.company),
             addedAt: it.addedAt || (it as any).createdAt || new Date(),
+            marketCapB: (it as any).marketCapB ?? null,
+            peRatio: (it as any).peRatio ?? null,
+            alertPrice: (it as any).alertPrice ?? null,
         }));
     } catch (err) {
         console.error('getWatchlistByEmail error:', err);
@@ -71,17 +77,35 @@ export async function getWatchlistByEmail(email?: string): Promise<WatchlistRow[
     }
 }
 
-export async function addSymbolToWatchlist(email: string | undefined, symbol: string, company = ''): Promise<{ success: boolean; error?: string }> {
+export type WatchlistNumericFields = { marketCapB?: number | null; peRatio?: number | null; alertPrice?: number | null };
+
+export async function addSymbolToWatchlist(
+    email: string | undefined,
+    symbol: string,
+    company = '',
+    extras?: WatchlistNumericFields
+): Promise<{ success: boolean; error?: string }> {
     if (!email || !symbol) return { success: false, error: 'Missing email or symbol' };
     try {
         const userId = await resolveUserIdByEmail(email);
         if (!userId) return { success: false, error: 'User not found' };
 
         const normalized = String(symbol).trim().toUpperCase();
-        const doc = { userId, symbol: normalized, company: company || normalized, addedAt: new Date() };
+        const doc = { userId, symbol: normalized, company: company || normalized, addedAt: new Date() } as any;
 
-        // Upsert to avoid duplicate error
-        await Watchlist.updateOne({ userId, symbol: normalized }, { $setOnInsert: doc }, { upsert: true });
+        const $set: any = {};
+        if (extras) {
+            if (extras.marketCapB != null) $set.marketCapB = extras.marketCapB;
+            if (extras.peRatio != null) $set.peRatio = extras.peRatio;
+            if (extras.alertPrice != null) $set.alertPrice = extras.alertPrice;
+        }
+
+        // Upsert and apply numeric fields if provided
+        await Watchlist.updateOne(
+            { userId, symbol: normalized },
+            Object.keys($set).length > 0 ? { $setOnInsert: doc, $set } : { $setOnInsert: doc },
+            { upsert: true }
+        );
         return { success: true };
     } catch (err: any) {
         console.error('addSymbolToWatchlist error:', err);
@@ -101,6 +125,29 @@ export async function removeSymbolFromWatchlist(email: string | undefined, symbo
     } catch (err: any) {
         console.error('removeSymbolFromWatchlist error:', err);
         return { success: false, error: err?.message || 'Failed to remove' };
+    }
+}
+
+export async function updateWatchlistFields(
+    email: string | undefined,
+    symbol: string,
+    fields: WatchlistNumericFields
+): Promise<{ success: boolean; error?: string }> {
+    if (!email || !symbol) return { success: false, error: 'Missing email or symbol' };
+    try {
+        const userId = await resolveUserIdByEmail(email);
+        if (!userId) return { success: false, error: 'User not found' };
+        const normalized = String(symbol).trim().toUpperCase();
+        const $set: any = {};
+        if (fields.marketCapB != null) $set.marketCapB = fields.marketCapB;
+        if (fields.peRatio != null) $set.peRatio = fields.peRatio;
+        if (fields.alertPrice != null) $set.alertPrice = fields.alertPrice;
+        if (Object.keys($set).length === 0) return { success: true };
+        await Watchlist.updateOne({ userId, symbol: normalized }, { $set });
+        return { success: true };
+    } catch (err: any) {
+        console.error('updateWatchlistFields error:', err);
+        return { success: false, error: err?.message || 'Failed to update' };
     }
 }
 

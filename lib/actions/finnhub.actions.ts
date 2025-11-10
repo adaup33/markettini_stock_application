@@ -5,7 +5,6 @@ import { getDateRange, validateArticle, formatArticle } from '@/lib/utils';
 import { POPULAR_STOCK_SYMBOLS } from '@/lib/constants';
 import { cache } from 'react';
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
-const NEXT_PUBLIC_FINNHUB_API_KEY = process.env.NEXT_PUBLIC_FINNHUB_API_KEY ?? '';
 
 export async function fetchJSON<T>(url: string, revalidateSeconds?: number): Promise<T> {
     const options: RequestInit & { next?: { revalidate?: number } } = revalidateSeconds
@@ -23,7 +22,12 @@ export async function fetchJSON<T>(url: string, revalidateSeconds?: number): Pro
 export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> {
     try {
         const range = getDateRange(5);
-        const token = NEXT_PUBLIC_FINNHUB_API_KEY;
+        const token = process.env.NEXT_PUBLIC_FINNHUB_API_KEY; // Only server-side key
+
+        if (!token) {
+            console.error('getNews: FINNHUB API key is not configured');
+            return [];
+        }
 
         const cleanSymbols = (symbols || [])
             .map((s) => s?.trim().toUpperCase())
@@ -72,22 +76,26 @@ export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> 
         }
 
         // General market news fallback or when no symbols provided
-        const generalUrl = `${FINNHUB_BASE_URL}/news?category=general&token=${token}`;
-        const general = await fetchJSON<RawNewsArticle[]>(generalUrl, 300);
+        try {
+            const generalUrl = `${FINNHUB_BASE_URL}/news?category=general&token=${token}`;
+            const general = await fetchJSON<RawNewsArticle[]>(generalUrl, 300);
 
-        const seen = new Set<string>();
-        const unique: RawNewsArticle[] = [];
-        for (const art of general || []) {
-            if (!validateArticle(art)) continue;
-            const key = `${art.id}-${art.url}-${art.headline}`;
-            if (seen.has(key)) continue;
-            seen.add(key);
-            unique.push(art);
-            if (unique.length >= 20) break; // cap early before final slicing
+            const seen = new Set<string>();
+            const unique: RawNewsArticle[] = [];
+            for (const art of general || []) {
+                if (!validateArticle(art)) continue;
+                const key = `${art.id}-${art.url}-${art.headline}`;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                unique.push(art);
+                if (unique.length >= 20) break; // cap early before final slicing
+            }
+
+            return unique.slice(0, maxArticles).map((a, idx) => formatArticle(a, false, undefined, idx));
+        } catch (e) {
+            console.error('getNews general fetch error:', e);
+            throw e;
         }
-
-        const formatted = unique.slice(0, maxArticles).map((a, idx) => formatArticle(a, false, undefined, idx));
-        return formatted;
     } catch (err) {
         console.error('getNews error:', err);
         throw new Error('Failed to fetch news');
@@ -97,7 +105,7 @@ export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> 
 
 export const searchStocks = cache(async (query?: string): Promise<StockWithWatchlistStatus[]> => {
     try {
-        const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
+        const token = process.env.NEXT_PUBLIC_FINNHUB_API_KEY; // Only server-side key
         if (!token) {
             // If no token, log and return empty to avoid throwing per requirements
             console.error('Error in stock search:', new Error('FINNHUB API key is not configured'));
@@ -106,7 +114,7 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
 
         const trimmed = typeof query === 'string' ? query.trim() : '';
 
-        let results: FinnhubSearchResult[] = [];
+        let results: FinnhubSearchResult[];
 
         if (!trimmed) {
             // Fetch top 10 popular symbols' profiles
@@ -150,7 +158,7 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
             results = Array.isArray(data?.result) ? data.result : [];
         }
 
-        const mapped: StockWithWatchlistStatus[] = results
+        return results
             .map((r) => {
                 const upper = (r.symbol || '').toUpperCase();
                 const name = r.description || upper;
@@ -168,8 +176,6 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
                 return item;
             })
             .slice(0, 15);
-
-        return mapped;
     } catch (err) {
         console.error('Error in stock search:', err);
         return [];
@@ -179,7 +185,7 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
 // New: fetch live quotes for symbols
 export async function getQuotes(symbols: string[]): Promise<Record<string, { price: string; change: string; percent: string }>> {
     try {
-        const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
+        const token = process.env.FINNHUB_API_KEY; // Only server-side key
         if (!token) {
             console.error('getQuotes: FINNHUB API key is not configured');
             return {};
