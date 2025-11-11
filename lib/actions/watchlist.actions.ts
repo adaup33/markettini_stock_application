@@ -78,6 +78,7 @@ export async function getWatchlistByEmail(email?: string): Promise<WatchlistRow[
 }
 
 export type WatchlistNumericFields = { marketCapB?: number | null; peRatio?: number | null; alertPrice?: number | null };
+export type WatchlistUpdateFields = WatchlistNumericFields & { company?: string };
 
 export async function addSymbolToWatchlist(
     email: string | undefined,
@@ -131,7 +132,7 @@ export async function removeSymbolFromWatchlist(email: string | undefined, symbo
 export async function updateWatchlistFields(
     email: string | undefined,
     symbol: string,
-    fields: WatchlistNumericFields
+    fields: WatchlistUpdateFields
 ): Promise<{ success: boolean; error?: string }> {
     if (!email || !symbol) return { success: false, error: 'Missing email or symbol' };
     try {
@@ -142,6 +143,7 @@ export async function updateWatchlistFields(
         if (fields.marketCapB != null) $set.marketCapB = fields.marketCapB;
         if (fields.peRatio != null) $set.peRatio = fields.peRatio;
         if (fields.alertPrice != null) $set.alertPrice = fields.alertPrice;
+        if (fields.company != null && String(fields.company).trim()) $set.company = String(fields.company).trim();
         if (Object.keys($set).length === 0) return { success: true };
         await Watchlist.updateOne({ userId, symbol: normalized }, { $set });
         return { success: true };

@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { updateWatchlistFields } from '@/lib/actions/watchlist.actions';
 import { auth } from '@/lib/better-auth/auth';
 
@@ -37,7 +37,7 @@ function parseNumber(v: unknown): number | null {
   return null;
 }
 
-export async function PATCH(req: Request, ctx: { params: { symbol: string } }) {
+export async function PATCH(req: NextRequest, ctx: { params: Promise<{ symbol: string }> }) {
   try {
     const url = new URL(req.url);
     const body = await req.json().catch(() => ({} as any));
@@ -64,17 +64,19 @@ export async function PATCH(req: Request, ctx: { params: { symbol: string } }) {
       if (dev) { email = dev; emailSource = 'dev_fallback'; emailDetail = process.env.DEV_WATCHLIST_EMAIL ? 'DEV_WATCHLIST_EMAIL' : (process.env.NEXT_PUBLIC_DEV_EMAIL ? 'NEXT_PUBLIC_DEV_EMAIL' : undefined); }
     }
 
-    const symbol = ctx?.params?.symbol;
+    const { symbol } = await ctx.params;
     if (!symbol) return NextResponse.json({ success: false, error: 'missing symbol', meta: { email: email ?? null } }, { status: 400 });
 
     const marketCapB = parseNumber((body as any)?.marketCapB ?? (body as any)?.marketCap);
     const peRatio = parseNumber((body as any)?.peRatio);
     const alertPrice = parseNumber((body as any)?.alertPrice ?? (body as any)?.alert);
+    const company = typeof (body as any)?.company === 'string' ? String((body as any).company).trim() : undefined;
 
     const result = await updateWatchlistFields(email, symbol, {
       marketCapB: marketCapB,
       peRatio: peRatio,
       alertPrice: alertPrice,
+      company: company,
     });
 
     // Broadcast update

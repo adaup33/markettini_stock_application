@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { connectToDb } from '@/database/mongoose';
 import { Alert } from '@/database/models/alert.model';
 import { auth } from '@/lib/better-auth/auth';
@@ -56,7 +56,7 @@ function parseNumber(v: unknown): number | null {
   return null;
 }
 
-export async function PATCH(req: Request, ctx: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     await connectToDb();
     const url = new URL(req.url);
@@ -76,7 +76,7 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
     const userId = await resolveUserIdByEmail(email);
     if (!userId) return NextResponse.json({ success: false, error: 'user not found', meta: { email: email ?? null } }, { status: 400 });
 
-    const id = ctx?.params?.id;
+    const { id } = await ctx.params;
     if (!id || !Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, error: 'invalid id' }, { status: 400 });
 
     const updates: any = {};
@@ -104,7 +104,7 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
   }
 }
 
-export async function DELETE(req: Request, ctx: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     await connectToDb();
     const url = new URL(req.url);
@@ -122,7 +122,7 @@ export async function DELETE(req: Request, ctx: { params: { id: string } }) {
     const userId = await resolveUserIdByEmail(email);
     if (!userId) return NextResponse.json({ success: false, error: 'user not found', meta: { email: email ?? null } }, { status: 400 });
 
-    const id = ctx?.params?.id;
+    const { id } = await ctx.params;
     if (!id || !Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, error: 'invalid id' }, { status: 400 });
 
     const res = await Alert.deleteOne({ _id: id, userId });

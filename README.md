@@ -84,3 +84,10 @@ Quick reference
   export const dynamic = 'force-dynamic'
 
 If you’re unsure whether a library works on Edge, assume it requires Node.js unless its docs explicitly say “Edge compatible.”
+
+
+## Mongoose connection (singleton)
+
+For how our Mongoose global singleton works, why we use it in Next.js, and how to use it safely, see:
+
+- docs/mongoose-singleton.md
