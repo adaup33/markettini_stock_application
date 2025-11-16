@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import {
     Table,
     TableBody,
@@ -161,10 +160,10 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
             }
         }
 
-         // Poll every 15 seconds for live updates
+         // Poll every 30 seconds for live updates (reduced from 15s to minimize server load)
          const interval = setInterval(() => {
              load();
-         }, 15000);
+         }, 30000);
 
          // Refresh on window focus or when document becomes visible
          const onVisibility = () => {
@@ -251,6 +250,9 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
         router.push(`/stocks/${symbol}`);
     };
 
+    // Memoize table headers to avoid recreation on every render
+    const tableHeaders = useMemo(() => WATCHLIST_TABLE_HEADER, []);
+
     if (loading) {
         return (
             <div className="w-full p-4 text-center">
@@ -263,28 +265,23 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
     }
 
     return (
-        <div className="w-full space-y-4">
-            {/* Search Bar */}
-            <div className="relative">
-                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                <Input
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search by company name or symbol..."
-                    className="pl-9 bg-gray-900/60 border-gray-800 focus:border-emerald-500"
-                />
-            </div>
-
-            {/* Table - Desktop */}
-            <div className="hidden md:block overflow-x-auto">
-                <Table>
-                    <TableHeader>
-                        <TableRow className="border-gray-800 hover:bg-transparent">
-                            {WATCHLIST_TABLE_HEADER.map((header) => (
-                                <TableHead key={header} className="text-left text-gray-400 font-semibold">
-                                    {header}
-                                </TableHead>
-                            ))}
+        <div className="w-full">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        {tableHeaders.map((header) => (
+                            <TableHead key={header} className="text-left">
+                                {header}
+                            </TableHead>
+                        ))}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {dataToRender.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={8} className="text-center py-6 text-sm text-gray-400">
+                                Your watchlist is empty — add stocks from Search or a Stock page.
+                            </TableCell>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
