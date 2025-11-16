@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useMemo, useCallback } from "react";
+import { useEffect, useRef, useMemo } from "react";
 
 const useTradingViewWidget = (
     scriptUrl: string,
