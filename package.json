@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "build": "next build",
     "build:vercel": "npm run build",
     "start": "next start",
     "ws-server": "node scripts/ws-server.js",
