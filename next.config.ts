@@ -24,14 +24,8 @@ const nextConfig = {
     // Compression
     compress: true,
     
-    // Optimize production builds
-    swcMinify: true,
-    
     // Reduce bundle size by removing source maps in production
     productionBrowserSourceMaps: false,
-    
-    // Optimize fonts
-    optimizeFonts: true,
     
     // Enable experimental features for better performance
     experimental: {
