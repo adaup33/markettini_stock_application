@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,39 +13,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, Bell, Check, Pencil, Trash2, ToggleLeft, ToggleRight, X } from "lucide-react";
-
-// Shape returned by our /api/alerts endpoints
-type AlertItemDto = {
-  _id: string;
-  userId: string;
-  symbol: string;
-  operator: '>' | '<' | '>=' | '<=' | '==';
-  threshold: number;
-  active: boolean;
-  note?: string;
-  createdAt: string;
-  lastTriggeredAt?: string;
-};
+import { useAlerts } from "@/hooks/useAlerts";
+import { AlertOperator } from "@/lib/actions/alert-client.actions";
 
 export default function AlertsPage() {
-  const [items, setItems] = useState<AlertItemDto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { items, loading, saving, error, create, update, remove, toggleActive, setError } = useAlerts({ autoLoad: true });
 
   // create form state
   const [symbol, setSymbol] = useState("");
-  const [operator, setOperator] = useState<'>' | '<' | '>=' | '<=' | '=='>('>');
+  const [operator, setOperator] = useState<AlertOperator>('>');
   const [threshold, setThreshold] = useState<string>("");
   const [note, setNote] = useState<string>("");
 
   // inline edit state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editThreshold, setEditThreshold] = useState<string>("");
-  const [editOperator, setEditOperator] = useState<'>' | '<' | '>=' | '<=' | '=='>('>');
+  const [editOperator, setEditOperator] = useState<AlertOperator>('>');
   const [editNote, setEditNote] = useState<string>("");
 
-  const operators: Array<{ value: AlertItemDto["operator"]; label: string }> = useMemo(
+  const operators: Array<{ value: AlertOperator; label: string }> = useMemo(
     () => [
       { value: '>', label: '>' },
       { value: '<', label: '<' },
@@ -56,76 +42,30 @@ export default function AlertsPage() {
     []
   );
 
-  async function load() {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/alerts`);
-      if (!res.ok) throw new Error("Failed to load alerts");
-      const data = await res.json();
-      const list = (data?.data ?? []) as AlertItemDto[];
-      setItems(Array.isArray(list) ? list : []);
-    } catch (e: any) {
-      console.error(e);
-      setError(e?.message || "Failed to load alerts");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    load();
-  }, []);
-
   async function createAlert() {
     const thr = Number((threshold || '').trim());
     if (!symbol.trim() || !isFinite(thr)) {
       setError("Please provide a symbol and a valid threshold number.");
       return;
     }
-    setSaving(true);
-    setError(null);
-    try {
-      const payload: any = { symbol: symbol.trim().toUpperCase(), operator, threshold: thr };
-      if (note.trim()) payload.note = note.trim();
-      const res = await fetch(`/api/alerts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("Failed to create alert");
-      // Optimistically append
-      await load();
+
+    const success = await create({
+      symbol: symbol.trim().toUpperCase(),
+      operator,
+      threshold: thr,
+      note: note.trim() || undefined,
+    });
+
+    if (success) {
       // clear form
       setSymbol("");
       setOperator('>');
       setThreshold("");
       setNote("");
-    } catch (e: any) {
-      console.error(e);
-      setError(e?.message || "Failed to create alert");
-    } finally {
-      setSaving(false);
     }
   }
 
-  async function toggleActive(id: string, active: boolean) {
-    try {
-      setItems((prev) => prev.map((x) => (x._id === id ? { ...x, active: !active } : x)));
-      const res = await fetch(`/api/alerts/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active: !active }),
-      });
-      if (!res.ok) throw new Error('Failed to toggle');
-    } catch (e) {
-      console.error(e);
-      // revert on failure
-      setItems((prev) => prev.map((x) => (x._id === id ? { ...x, active } : x)));
-    }
-  }
-
-  function startEdit(item: AlertItemDto) {
+  function startEdit(item: typeof items[0]) {
     setEditingId(item._id);
     setEditThreshold(String(item.threshold));
     setEditOperator(item.operator);
@@ -145,32 +85,15 @@ export default function AlertsPage() {
       setError("Please provide a valid threshold number.");
       return;
     }
-    try {
-      const res = await fetch(`/api/alerts/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ threshold: thr, operator: editOperator, note: editNote.trim() || undefined }),
-      });
-      if (!res.ok) throw new Error('Failed to save');
-      // Update local state
-      setItems((prev) => prev.map((x) => (x._id === id ? { ...x, threshold: thr, operator: editOperator, note: editNote.trim() || undefined } : x)));
-      cancelEdit();
-    } catch (e: any) {
-      console.error(e);
-      setError(e?.message || 'Failed to save alert');
-    }
-  }
 
-  async function remove(id: string) {
-    const prev = items;
-    try {
-      setItems((p) => p.filter((x) => x._id !== id));
-      const res = await fetch(`/api/alerts/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete');
-    } catch (e) {
-      console.error(e);
-      // revert
-      setItems(prev);
+    const success = await update(id, {
+      threshold: thr,
+      operator: editOperator,
+      note: editNote.trim() || undefined,
+    });
+
+    if (success) {
+      cancelEdit();
     }
   }
 
@@ -188,7 +111,7 @@ export default function AlertsPage() {
             <Input placeholder="Symbol (e.g., AAPL)" value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} />
           </div>
           <div className="md:col-span-1">
-            <Select value={operator} onValueChange={(v) => setOperator(v as any)}>
+            <Select value={operator} onValueChange={(v) => setOperator(v as AlertOperator)}>
               <SelectTrigger className="w-full"><SelectValue placeholder=">" /></SelectTrigger>
               <SelectContent>
                 <SelectGroup>
@@ -231,7 +154,7 @@ export default function AlertsPage() {
                     <span className="font-semibold">{it.symbol}</span>
                     {editingId === it._id ? (
                       <>
-                        <Select value={editOperator} onValueChange={(v) => setEditOperator(v as any)}>
+                        <Select value={editOperator} onValueChange={(v) => setEditOperator(v as AlertOperator)}>
                           <SelectTrigger className="h-7 px-2"><SelectValue placeholder=">" /></SelectTrigger>
                           <SelectContent>
                             <SelectGroup>
