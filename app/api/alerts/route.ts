@@ -5,16 +5,19 @@ import { connectToDb } from '@/database/mongoose';
 import { Alert } from '@/database/models/alert.model';
 import { auth } from '@/lib/better-auth/auth';
 
-async function deriveEmailFromAuth(req: Request): Promise<string | undefined> {
+async function getUserFromSession(req: Request): Promise<{ userId: string; email: string } | null> {
   try {
-    if (!auth) return undefined;
+    if (!auth) return null;
     const session = await auth.api.getSession({ headers: req.headers });
-    const email = session?.user?.email;
-    return typeof email === 'string' ? email : undefined;
+    if (!session?.user?.id || !session?.user?.email) return null;
+    return {
+      userId: session.user.id,
+      email: session.user.email
+    };
   } catch (err) {
-    console.error('alerts deriveEmailFromAuth error', err);
+    console.error('alerts getUserFromSession error', err);
+    return null;
   }
-  return undefined;
 }
 
 function nodemailerFallbackAllowed(): boolean {
@@ -58,27 +61,47 @@ function parseNumber(v: unknown): number | null {
 export async function GET(req: Request) {
   try {
     const mongoose = await connectToDb();
-    const url = new URL(req.url);
-    const queryEmail = url.searchParams.get('email') || undefined;
-    const headerEmail = req.headers.get('x-user-email') || req.headers.get('x-useremail') || undefined;
-    const resolved1 = resolveEmailFromRequest(req, { queryEmail, headersEmail: headerEmail });
-    let email = resolved1.email;
-    let emailSource = resolved1.source;
-    let emailDetail = resolved1.detail;
+    
+    // Try to get user from session first
+    const user = await getUserFromSession(req);
+    let userId: string | null = user?.userId ?? null;
+    let email: string | undefined = user?.email;
+    let emailSource: string = user ? 'auth' : 'none';
+    let emailDetail: string | undefined = undefined;
 
-    if (!email) {
-      const derived = await deriveEmailFromAuth(req);
-      if (derived) { email = derived; emailSource = 'auth'; }
-    }
-    if (!email && nodemailerFallbackAllowed() && process.env.NODEMAILER_EMAIL) { email = process.env.NODEMAILER_EMAIL; emailSource = 'nodemailer_env'; emailDetail = 'NODEMAILER_EMAIL'; }
-    if (!email && process.env.NODE_ENV !== 'production') {
-      const dev = process.env.DEV_WATCHLIST_EMAIL || process.env.NEXT_PUBLIC_DEV_EMAIL;
-      if (dev) { email = dev; emailSource = 'dev_fallback'; emailDetail = process.env.DEV_WATCHLIST_EMAIL ? 'DEV_WATCHLIST_EMAIL' : (process.env.NEXT_PUBLIC_DEV_EMAIL ? 'NEXT_PUBLIC_DEV_EMAIL' : undefined); }
+    // Fallback to manual email resolution for testing/development
+    if (!user) {
+      const url = new URL(req.url);
+      const queryEmail = url.searchParams.get('email') || undefined;
+      const headerEmail = req.headers.get('x-user-email') || req.headers.get('x-useremail') || undefined;
+      const resolved1 = resolveEmailFromRequest(req, { queryEmail, headersEmail: headerEmail });
+      email = resolved1.email;
+      emailSource = resolved1.source;
+      emailDetail = resolved1.detail;
+
+      if (!email && nodemailerFallbackAllowed() && process.env.NODEMAILER_EMAIL) { 
+        email = process.env.NODEMAILER_EMAIL; 
+        emailSource = 'nodemailer_env'; 
+        emailDetail = 'NODEMAILER_EMAIL'; 
+      }
+      if (!email && process.env.NODE_ENV !== 'production') {
+        const dev = process.env.DEV_WATCHLIST_EMAIL || process.env.NEXT_PUBLIC_DEV_EMAIL;
+        if (dev) { 
+          email = dev; 
+          emailSource = 'dev_fallback'; 
+          emailDetail = process.env.DEV_WATCHLIST_EMAIL ? 'DEV_WATCHLIST_EMAIL' : (process.env.NEXT_PUBLIC_DEV_EMAIL ? 'NEXT_PUBLIC_DEV_EMAIL' : undefined); 
+        }
+      }
+
+      // Only do database lookup if we have email but no userId
+      if (email && !userId) {
+        userId = await resolveUserIdByEmail(email);
+      }
     }
 
-    const userId = await resolveUserIdByEmail(email);
     if (!userId) return NextResponse.json({ success: true, data: [], meta: { email: email ?? null } });
 
+    const url = new URL(req.url);
     const symbol = url.searchParams.get('symbol') || undefined;
     const page = Math.max(1, Number(url.searchParams.get('page') || '1'));
     const limit = Math.min(100, Math.max(1, Number(url.searchParams.get('limit') || '50')));
@@ -101,23 +124,49 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     await connectToDb();
-    const url = new URL(req.url);
-    const body = await req.json().catch(() => ({} as any));
-    const bodyEmail = (body?.email as string | undefined) || undefined;
-    const queryEmail = url.searchParams.get('email') || undefined;
-    const headerEmail = req.headers.get('x-user-email') || req.headers.get('x-useremail') || undefined;
-    const resolved1 = resolveEmailFromRequest(req, { bodyEmail, queryEmail, headersEmail: headerEmail });
-    let email = resolved1.email;
-    let emailSource = resolved1.source;
-    let emailDetail = resolved1.detail;
+    
+    // Try to get user from session first
+    const user = await getUserFromSession(req);
+    let userId: string | null = user?.userId ?? null;
+    let email: string | undefined = user?.email;
+    let emailSource: string = user ? 'auth' : 'none';
+    let emailDetail: string | undefined = undefined;
 
-    if (!email) { const derived = await deriveEmailFromAuth(req); if (derived) { email = derived; emailSource = 'auth'; } }
-    if (!email && nodemailerFallbackAllowed() && process.env.NODEMAILER_EMAIL) { email = process.env.NODEMAILER_EMAIL; emailSource = 'nodemailer_env'; emailDetail = 'NODEMAILER_EMAIL'; }
-    if (!email && process.env.NODE_ENV !== 'production') { const dev = process.env.DEV_WATCHLIST_EMAIL || process.env.NEXT_PUBLIC_DEV_EMAIL; if (dev) { email = dev; emailSource = 'dev_fallback'; emailDetail = process.env.DEV_WATCHLIST_EMAIL ? 'DEV_WATCHLIST_EMAIL' : (process.env.NEXT_PUBLIC_DEV_EMAIL ? 'NEXT_PUBLIC_DEV_EMAIL' : undefined); } }
+    // Fallback to manual email resolution for testing/development
+    if (!user) {
+      const url = new URL(req.url);
+      const body = await req.json().catch(() => ({} as any));
+      const bodyEmail = (body?.email as string | undefined) || undefined;
+      const queryEmail = url.searchParams.get('email') || undefined;
+      const headerEmail = req.headers.get('x-user-email') || req.headers.get('x-useremail') || undefined;
+      const resolved1 = resolveEmailFromRequest(req, { bodyEmail, queryEmail, headersEmail: headerEmail });
+      email = resolved1.email;
+      emailSource = resolved1.source;
+      emailDetail = resolved1.detail;
 
-    const userId = await resolveUserIdByEmail(email);
+      if (!email && nodemailerFallbackAllowed() && process.env.NODEMAILER_EMAIL) { 
+        email = process.env.NODEMAILER_EMAIL; 
+        emailSource = 'nodemailer_env'; 
+        emailDetail = 'NODEMAILER_EMAIL'; 
+      }
+      if (!email && process.env.NODE_ENV !== 'production') { 
+        const dev = process.env.DEV_WATCHLIST_EMAIL || process.env.NEXT_PUBLIC_DEV_EMAIL; 
+        if (dev) { 
+          email = dev; 
+          emailSource = 'dev_fallback'; 
+          emailDetail = process.env.DEV_WATCHLIST_EMAIL ? 'DEV_WATCHLIST_EMAIL' : (process.env.NEXT_PUBLIC_DEV_EMAIL ? 'NEXT_PUBLIC_DEV_EMAIL' : undefined); 
+        } 
+      }
+
+      // Only do database lookup if we have email but no userId
+      if (email && !userId) {
+        userId = await resolveUserIdByEmail(email);
+      }
+    }
+
     if (!userId) return NextResponse.json({ success: false, error: 'User not found', meta: { email: email ?? null } }, { status: 400 });
 
+    const body = await req.json().catch(() => ({} as any));
     const symbol = (body?.symbol as string | undefined)?.toUpperCase() || undefined;
     const operator = parseOperator(body?.operator);
     const threshold = parseNumber(body?.threshold);
