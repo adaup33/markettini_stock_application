@@ -249,3 +249,60 @@ export async function getQuotes(symbols: string[]): Promise<Record<string, { pri
         return {};
     }
 }
+
+// New: fetch company metrics (market cap, PE ratio, etc.)
+export async function getCompanyMetrics(symbols: string[]): Promise<Record<string, { marketCapB: number | null; peRatio: number | null }>> {
+    try {
+        const token = process.env.NEXT_PUBLIC_FINNHUB_API_KEY;
+        if (!token) {
+            console.error('getCompanyMetrics: FINNHUB API key is not configured');
+            return {};
+        }
+
+        const clean = (symbols || [])
+            .map((s) => String(s || '').trim().toUpperCase())
+            .filter((s) => Boolean(s));
+
+        if (clean.length === 0) return {};
+
+        const results = await Promise.all(
+            clean.map(async (sym) => {
+                try {
+                    // Fetch basic financials which includes market cap and PE ratio
+                    const url = `${FINNHUB_BASE_URL}/stock/metric?symbol=${encodeURIComponent(sym)}&metric=all&token=${token}`;
+                    const data = await fetchJSON<any>(url, CACHE_DURATIONS.PROFILES);
+                    return { sym, data };
+                } catch (e) {
+                    console.error('getCompanyMetrics error for', sym, e);
+                    return { sym, data: null };
+                }
+            })
+        );
+
+        const mapped: Record<string, { marketCapB: number | null; peRatio: number | null }> = {};
+        for (const r of results) {
+            const sym = r.sym;
+            const d = r.data;
+            if (!d || !d.metric) {
+                mapped[sym] = { marketCapB: null, peRatio: null };
+                continue;
+            }
+
+            // Market cap is typically in millions, convert to billions
+            const marketCapMillions = d.metric?.marketCapitalization;
+            const marketCapB = typeof marketCapMillions === 'number' && Number.isFinite(marketCapMillions) 
+                ? marketCapMillions / 1000 
+                : null;
+
+            const peRatio = d.metric?.peBasicExclExtraTTM || d.metric?.peTTM || d.metric?.peNormalizedAnnual;
+            const peRatioNum = typeof peRatio === 'number' && Number.isFinite(peRatio) ? peRatio : null;
+
+            mapped[sym] = { marketCapB, peRatio: peRatioNum };
+        }
+
+        return mapped;
+    } catch (err) {
+        console.error('getCompanyMetrics error:', err);
+        return {};
+    }
+}

@@ -214,6 +214,18 @@ export default function AlertsPage() {
       <div>
         <h1 className="text-3xl font-bold text-gray-100 flex items-center gap-2"><Bell className="h-6 w-6 text-emerald-500" /> Alerts</h1>
         <p className="text-gray-400 mt-2">Create and manage price alerts for your favorite stocks</p>
+        <div className="mt-4 p-4 rounded-lg bg-gray-800/50 border border-gray-700">
+          <h2 className="text-sm font-semibold text-emerald-400 mb-2">How to use alerts:</h2>
+          <ul className="text-sm text-gray-400 space-y-1 list-disc list-inside">
+            <li>Enter a stock symbol (e.g., AAPL, MSFT) or search using the dropdown</li>
+            <li>Choose a comparison operator ({">"}, {"<"}, {"≥"}, {"≤"}, {"=="})</li>
+            <li>Set a threshold price (e.g., 150.00)</li>
+            <li>Optionally add a note to remember why you set this alert</li>
+            <li>Click "Create Alert" to save</li>
+            <li>Toggle alerts on/off using the switch button</li>
+            <li>Edit alerts by clicking the pencil icon, or delete them with the trash icon</li>
+          </ul>
+        </div>
       </div>
 
       {/* Create form */}
