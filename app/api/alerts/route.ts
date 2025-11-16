@@ -91,9 +91,10 @@ export async function GET(req: Request) {
     const items = await Alert.find(filter).skip((page - 1) * limit).limit(limit).sort({ createdAt: -1 }).lean();
 
     return NextResponse.json({ success: true, data: items, meta: { email: email ?? null, page, limit, total } });
-  } catch (err) {
+  } catch (err: any) {
     console.error('alerts GET error', err);
-    return NextResponse.json({ success: false, error: 'failed' }, { status: 500 });
+    const errorMessage = err?.message || 'Failed to fetch alerts';
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
 
@@ -115,7 +116,7 @@ export async function POST(req: Request) {
     if (!email && process.env.NODE_ENV !== 'production') { const dev = process.env.DEV_WATCHLIST_EMAIL || process.env.NEXT_PUBLIC_DEV_EMAIL; if (dev) { email = dev; emailSource = 'dev_fallback'; emailDetail = process.env.DEV_WATCHLIST_EMAIL ? 'DEV_WATCHLIST_EMAIL' : (process.env.NEXT_PUBLIC_DEV_EMAIL ? 'NEXT_PUBLIC_DEV_EMAIL' : undefined); } }
 
     const userId = await resolveUserIdByEmail(email);
-    if (!userId) return NextResponse.json({ success: false, error: 'user not found', meta: { email: email ?? null } }, { status: 400 });
+    if (!userId) return NextResponse.json({ success: false, error: 'User not found', meta: { email: email ?? null } }, { status: 400 });
 
     const symbol = (body?.symbol as string | undefined)?.toUpperCase() || undefined;
     const operator = parseOperator(body?.operator);
@@ -124,7 +125,7 @@ export async function POST(req: Request) {
     const active = typeof body?.active === 'boolean' ? body.active : true;
 
     if (!symbol || !operator || threshold == null) {
-      return NextResponse.json({ success: false, error: 'Invalid payload', meta: { email: email ?? null } }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Invalid payload: symbol, operator, and threshold are required', meta: { email: email ?? null } }, { status: 400 });
     }
 
     const created = await Alert.create({ userId, symbol, operator, threshold, active, note, createdAt: new Date() });
@@ -136,8 +137,9 @@ export async function POST(req: Request) {
     } catch (e) { console.error('alerts POST broadcast failed', e); }
 
     return NextResponse.json({ success: true, data: created, meta: { email: email ?? null, emailSource, emailDetail } }, { status: 201 });
-  } catch (err) {
+  } catch (err: any) {
     console.error('alerts POST error', err);
-    return NextResponse.json({ success: false, error: 'failed' }, { status: 500 });
+    const errorMessage = err?.message || 'Failed to create alert';
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
