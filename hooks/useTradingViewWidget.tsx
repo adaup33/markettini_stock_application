@@ -4,7 +4,8 @@ import { useEffect, useRef, useMemo } from "react";
 const useTradingViewWidget = (
     scriptUrl: string,
     config: Record<string, unknown>,
-    height = 600
+    height = 600,
+    onLoad?: () => void
 ) => {
     const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -30,6 +31,14 @@ const useTradingViewWidget = (
         script.async = true;
         script.textContent = stableConfig;  // ✅ FIX: Use textContent instead of innerHTML
 
+        // Add load event listener
+        script.onload = () => {
+            // Give the widget a moment to render
+            setTimeout(() => {
+                if (onLoad) onLoad();
+            }, 300);
+        };
+
         container.appendChild(script);
         container.dataset.loaded = 'true';
 
@@ -40,7 +49,7 @@ const useTradingViewWidget = (
                 delete container.dataset.loaded;
             }
         }
-    }, [scriptUrl, stableConfig, height]);  // ✅ FIX: Use stableConfig instead of config
+    }, [scriptUrl, stableConfig, height, onLoad]);  // ✅ FIX: Use stableConfig instead of config
 
     return containerRef;
 }

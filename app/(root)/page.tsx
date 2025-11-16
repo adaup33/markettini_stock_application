@@ -10,10 +10,14 @@ const Home = () => {
     const scriptUrl = `https://s3.tradingview.com/external-embedding/embed-widget-`;
 
     return (
-        <div className="flex min-h-screen home-wrapper">
-            <div className="w-full mb-2"><h1 className="text-3xl font-bold text-gray-100">Dashboard</h1><p className="text-gray-400 mt-1">Market overview and insights</p></div>
+        <div className="flex min-h-screen home-wrapper animate-fade-in">
+            <div className="w-full mb-2">
+                <h1 className="text-3xl font-bold text-gray-100">Dashboard</h1>
+                <p className="text-gray-400 mt-1">Market overview and insights</p>
+            </div>
+            
             <section className="grid w-full gap-8 home-section">
-                <div className="md:col-span-1 xl:col-span-1">
+                <div className="md:col-span-1 xl:col-span-1 animate-slide-up">
                     <TradingViewWidget
                         title="Market Overview"
                         scriptUrl={`${scriptUrl}market-overview.js`}
@@ -22,7 +26,7 @@ const Home = () => {
                         height={600}
                     />
                 </div>
-                <div className="md:col-span-1 xl:col-span-2">
+                <div className="md:col-span-1 xl:col-span-2 animate-slide-up animation-delay-100">
                     <TradingViewWidget
                         title="Stock Heatmap"
                         scriptUrl={`${scriptUrl}stock-heatmap.js`}
@@ -33,14 +37,14 @@ const Home = () => {
             </section>
 
             <section className="grid w-full gap-8 home-section">
-                <div className="md:col-span-1 xl:col-span-1">
+                <div className="md:col-span-1 xl:col-span-1 animate-slide-up animation-delay-200">
                     <TradingViewWidget
                         scriptUrl={`${scriptUrl}timeline.js`}
                         config={TOP_STORIES_WIDGET_CONFIG}
                         className="custom-chart"
                     />
                 </div>
-                <div className="md:col-span-1 xl:col-span-2">
+                <div className="md:col-span-1 xl:col-span-2 animate-slide-up animation-delay-300">
                     <TradingViewWidget
                         scriptUrl={`${scriptUrl}market-quotes.js`}
                         config={MARKET_DATA_WIDGET_CONFIG}
