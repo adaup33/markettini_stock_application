@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
     Table,
     TableBody,
@@ -333,8 +334,59 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
                                             isInWatchlist={true}
                                             type="icon"
                                             onWatchlistChange={async (symbol, isAdded) => {
+                                                // Optimistically remove from UI
                                                 if (!isAdded) {
                                                     setRows((prev) => prev.filter((r) => r.symbol !== symbol));
+                                                }
+                                                
+                                                // Call API to remove from watchlist
+                                                try {
+                                                    const url = `/api/watchlist?symbol=${encodeURIComponent(symbol)}${email ? `&email=${encodeURIComponent(email)}` : ''}`;
+                                                    const res = await fetch(url, { method: 'DELETE' });
+                                                    if (!res.ok) {
+                                                        throw new Error('Failed to remove from watchlist');
+                                                    }
+                                                } catch (err) {
+                                                    console.error('Failed to remove from watchlist', err);
+                                                    // Reload the list on error to get the correct state
+                                                    const url = `/api/watchlist${email ? `?email=${encodeURIComponent(email)}` : ""}`;
+                                                    const res = await fetch(url);
+                                                    if (res.ok) {
+                                                        const json = await res.json();
+                                                        if (Array.isArray(json.data)) {
+                                                            const mapped = json.data.map((d: any) => {
+                                                                const priceStr = d.price || "-";
+                                                                const priceMatch = priceStr.match(/[\d.]+/);
+                                                                const priceNum = priceMatch ? parseFloat(priceMatch[0]) : null;
+                                                                const addedPrice = d.addedPrice || null;
+                                                                let gainLoss = "-";
+                                                                let gainLossPercent = 0;
+                                                                if (priceNum !== null && addedPrice !== null && addedPrice > 0) {
+                                                                    const diff = priceNum - addedPrice;
+                                                                    gainLossPercent = (diff / addedPrice) * 100;
+                                                                    const sign = diff >= 0 ? "+" : "";
+                                                                    gainLoss = `${sign}$${diff.toFixed(2)} (${sign}${gainLossPercent.toFixed(2)}%)`;
+                                                                }
+                                                                return {
+                                                                    company: d.company || d.symbol,
+                                                                    symbol: d.symbol,
+                                                                    price: priceStr,
+                                                                    priceNum: priceNum,
+                                                                    change: d.change || "-",
+                                                                    changePercent: d.change || "-",
+                                                                    marketCap: d.marketCap || "-",
+                                                                    peRatio: d.peRatio || "-",
+                                                                    alert: d.alert || "-",
+                                                                    action: "View",
+                                                                    addedPrice: addedPrice,
+                                                                    addedAt: d.addedAt || "",
+                                                                    gainLoss: gainLoss,
+                                                                    gainLossPercent: gainLossPercent,
+                                                                };
+                                                            });
+                                                            setRows(mapped);
+                                                        }
+                                                    }
                                                 }
                                             }}
                                         />
@@ -371,8 +423,59 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
                                         isInWatchlist={true}
                                         type="icon"
                                         onWatchlistChange={async (symbol, isAdded) => {
+                                            // Optimistically remove from UI
                                             if (!isAdded) {
                                                 setRows((prev) => prev.filter((r) => r.symbol !== symbol));
+                                            }
+                                            
+                                            // Call API to remove from watchlist
+                                            try {
+                                                const url = `/api/watchlist?symbol=${encodeURIComponent(symbol)}${email ? `&email=${encodeURIComponent(email)}` : ''}`;
+                                                const res = await fetch(url, { method: 'DELETE' });
+                                                if (!res.ok) {
+                                                    throw new Error('Failed to remove from watchlist');
+                                                }
+                                            } catch (err) {
+                                                console.error('Failed to remove from watchlist', err);
+                                                // Reload the list on error to get the correct state
+                                                const url = `/api/watchlist${email ? `?email=${encodeURIComponent(email)}` : ""}`;
+                                                const res = await fetch(url);
+                                                if (res.ok) {
+                                                    const json = await res.json();
+                                                    if (Array.isArray(json.data)) {
+                                                        const mapped = json.data.map((d: any) => {
+                                                            const priceStr = d.price || "-";
+                                                            const priceMatch = priceStr.match(/[\d.]+/);
+                                                            const priceNum = priceMatch ? parseFloat(priceMatch[0]) : null;
+                                                            const addedPrice = d.addedPrice || null;
+                                                            let gainLoss = "-";
+                                                            let gainLossPercent = 0;
+                                                            if (priceNum !== null && addedPrice !== null && addedPrice > 0) {
+                                                                const diff = priceNum - addedPrice;
+                                                                gainLossPercent = (diff / addedPrice) * 100;
+                                                                const sign = diff >= 0 ? "+" : "";
+                                                                gainLoss = `${sign}$${diff.toFixed(2)} (${sign}${gainLossPercent.toFixed(2)}%)`;
+                                                            }
+                                                            return {
+                                                                company: d.company || d.symbol,
+                                                                symbol: d.symbol,
+                                                                price: priceStr,
+                                                                priceNum: priceNum,
+                                                                change: d.change || "-",
+                                                                changePercent: d.change || "-",
+                                                                marketCap: d.marketCap || "-",
+                                                                peRatio: d.peRatio || "-",
+                                                                alert: d.alert || "-",
+                                                                action: "View",
+                                                                addedPrice: addedPrice,
+                                                                addedAt: d.addedAt || "",
+                                                                gainLoss: gainLoss,
+                                                                gainLossPercent: gainLossPercent,
+                                                            };
+                                                        });
+                                                        setRows(mapped);
+                                                    }
+                                                }
                                             }
                                         }}
                                     />

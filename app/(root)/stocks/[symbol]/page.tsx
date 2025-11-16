@@ -8,10 +8,24 @@ import {
     COMPANY_PROFILE_WIDGET_CONFIG,
     COMPANY_FINANCIALS_WIDGET_CONFIG,
 } from "@/lib/constants";
+import { auth } from "@/lib/better-auth/auth";
+import { getWatchlistSymbolsByEmail } from "@/lib/actions/watchlist.actions";
 
 export default async function StockDetails({ params }: StockDetailsPageProps) {
     const { symbol } = await params;
     const scriptUrl = `https://s3.tradingview.com/external-embedding/embed-widget-`;
+    
+    // Check if symbol is in user's watchlist
+    let isInWatchlist = false;
+    try {
+        const session = await auth.api.getSession();
+        if (session?.user?.email) {
+            const watchlistSymbols = await getWatchlistSymbolsByEmail(session.user.email);
+            isInWatchlist = watchlistSymbols.includes(symbol.toUpperCase());
+        }
+    } catch (err) {
+        console.error('Failed to fetch watchlist status', err);
+    }
 
     return (
         <div className="flex min-h-screen p-4 md:p-6 lg:p-8 animate-fade-in">
@@ -51,7 +65,7 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
                         <WatchlistButton 
                             symbol={symbol.toUpperCase()} 
                             company={symbol.toUpperCase()} 
-                            isInWatchlist={false}
+                            isInWatchlist={isInWatchlist}
                             showTrashIcon={false}
                         />
                     </div>
