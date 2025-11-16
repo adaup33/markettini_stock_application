@@ -215,7 +215,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, error: 'Missing email', meta: { email: null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null } }, { status: 400 });
         }
         if (!symbol) {
-            return NextResponse.json({ success: false, error: 'Missing symbol', meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null } }, { status: 400 });
+            return NextResponse.json({ success: false, error: 'Missing symbol', meta: { email: email, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null } }, { status: 400 });
         }
 
         // Parse optional numeric inputs
