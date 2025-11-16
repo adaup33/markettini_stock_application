@@ -57,33 +57,35 @@ export default function SearchPage() {
   }, [stocks, loading]);
 
   return (
-    <div className="flex min-h-[70vh] flex-col gap-6">
-      <div>
+    <div className="flex min-h-[70vh] flex-col gap-6 animate-fade-in">
+      <div className="animate-slide-up">
         <h1 className="text-3xl font-bold text-gray-100">Search</h1>
         <p className="text-gray-400 mt-2">Find stocks and add them to your watchlist</p>
       </div>
 
-      <div className="flex w-full items-center gap-3">
+      <div className="flex w-full items-center gap-3 animate-slide-up animation-delay-100">
         <div className="relative w-full">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
           <Input
             value={term}
             onChange={(e) => setTerm(e.target.value)}
             placeholder={placeholder}
-            className="pl-9 bg-gray-900/60 border-gray-800 focus:border-emerald-500 transition-colors"
+            className="pl-9 bg-gray-900/60 border-gray-800 focus:border-emerald-500 transition-all duration-200"
           />
           {loading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-500" />}
         </div>
-        <Button onClick={handleSearch} variant="default" className="bg-emerald-600 hover:bg-emerald-500 transition-colors">
+        <Button onClick={handleSearch} variant="default" className="bg-emerald-600 hover:bg-emerald-500 transition-all duration-200 hover:scale-105">
           Search
         </Button>
       </div>
 
-      <div className="rounded-lg border border-gray-800 bg-gray-900/40 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
-          <div className="text-sm text-gray-400">
-            {isSearching ? "Search results" : "Popular stocks"}{" "}
-            <span className="text-gray-500">({loading ? 0 : display.length})</span>
+      <div className="rounded-lg border border-gray-800 bg-gray-900/40 overflow-hidden animate-slide-up animation-delay-200">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-gray-900/60">
+          <div className="text-sm text-gray-400 flex items-center gap-2">
+            <span className="font-medium">{isSearching ? "Search results" : "Popular stocks"}</span>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-semibold">
+              {loading ? 0 : display.length}
+            </span>
           </div>
         </div>
         <ul className="divide-y divide-gray-800">
@@ -97,22 +99,28 @@ export default function SearchPage() {
           ) : display.length === 0 ? (
             <li className="px-4 py-8 text-center text-gray-500">No stocks found</li>
           ) : (
-            display.map((s) => (
-              <li key={s.symbol} className="group hover:bg-gray-900/60 transition-colors">
+            display.map((s, index) => (
+              <li 
+                key={s.symbol} 
+                className="group hover:bg-gray-900/60 transition-all duration-200"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
                 <Link 
                   href={`/stocks/${s.symbol}`}
                   className="px-4 py-3 flex items-center gap-3 w-full"
                 >
-                  <TrendingUp className="h-4 w-4 text-gray-500 group-hover:text-emerald-500 transition-colors" />
+                  <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                    <TrendingUp className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-gray-100 truncate group-hover:text-emerald-400 transition-colors">{s.name || s.symbol}</div>
                     <div className="text-xs text-gray-500 truncate">
-                      {s.symbol} | {s.exchange} | {s.type}
+                      {s.symbol} • {s.exchange} • {s.type}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-emerald-500 hover:text-emerald-400 text-sm font-medium transition-colors">
-                      View
+                    <span className="text-emerald-500 hover:text-emerald-400 text-sm font-medium transition-colors opacity-0 group-hover:opacity-100">
+                      View →
                     </span>
                     <div onClick={(e) => e.preventDefault()}>
                       <WatchlistButton

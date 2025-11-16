@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo, useMemo, useState } from 'react';
+import React, { memo, useMemo, useState, Suspense } from 'react';
 import useTradingViewWidget from "@/hooks/useTradingViewWidget";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +12,19 @@ interface TradingViewWidgetProps {
     className?: string;
 }
 
+// Loading skeleton component
+const WidgetSkeleton = ({ height }: { height: number }) => (
+    <div 
+        className="bg-gray-900/60 border border-gray-800 rounded-lg flex items-center justify-center animate-pulse"
+        style={{ height, width: "100%" }}
+    >
+        <div className="flex flex-col items-center gap-3">
+            <div className="h-8 w-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-sm text-gray-400">Loading widget...</span>
+        </div>
+    </div>
+);
+
 function TradingViewWidget({
                                title,
                                scriptUrl,
@@ -21,7 +34,7 @@ function TradingViewWidget({
                            }: TradingViewWidgetProps) {
     const [isLoaded, setIsLoaded] = useState(false);
     
-    // ✅ OPTIONAL: Memoize config to prevent re-renders (if not already a constant)
+    // ✅ Memoize config to prevent re-renders
     const stableConfig = useMemo(() => config, [config]);
 
     const containerRef = useTradingViewWidget(scriptUrl, stableConfig, height, () => {
@@ -36,28 +49,20 @@ function TradingViewWidget({
                     {title}
                 </h3>
             )}
-            <div
-                className={cn('tradingview-widget-container relative', className)}
-                ref={containerRef}
-            >
-                {/* Loading skeleton */}
-                {!isLoaded && (
-                    <div 
-                        className="absolute inset-0 bg-gray-900/60 border border-gray-800 rounded-lg flex items-center justify-center animate-pulse"
-                        style={{ height, width: "100%" }}
-                    >
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="h-8 w-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                            <span className="text-sm text-gray-400">Loading widget...</span>
-                        </div>
-                    </div>
-                )}
-                {/* This inner div is created by the hook, but keeping it here for SSR */}
+            <Suspense fallback={<WidgetSkeleton height={height} />}>
                 <div
-                    className={cn("tradingview-widget-container__widget transition-opacity duration-300", isLoaded ? "opacity-100" : "opacity-0")}
-                    style={{ height, width: "100%" }}
-                />
-            </div>
+                    className={cn('tradingview-widget-container relative', className)}
+                    ref={containerRef}
+                >
+                    {/* Loading skeleton */}
+                    {!isLoaded && <WidgetSkeleton height={height} />}
+                    {/* This inner div is created by the hook */}
+                    <div
+                        className={cn("tradingview-widget-container__widget transition-opacity duration-300", isLoaded ? "opacity-100" : "opacity-0")}
+                        style={{ height, width: "100%" }}
+                    />
+                </div>
+            </Suspense>
         </div>
     );
 }
