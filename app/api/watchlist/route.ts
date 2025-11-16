@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { addSymbolToWatchlist, removeSymbolFromWatchlist, getWatchlistByEmail } from '@/lib/actions/watchlist.actions';
-import { auth } from '@/lib/better-auth/auth';
 import { getQuotes } from '@/lib/actions/finnhub.actions';
+import { resolveEmailForRequest, nodemailerFallbackAllowed } from '@/lib/utils/auth-helpers';
 
 function formatNumber(n: number | null | undefined): string {
     if (n == null || isNaN(n as any)) return '-';
@@ -64,72 +64,13 @@ function parseMarketCapToBillions(v: unknown): number | null {
     }
 }
 
-async function deriveEmailFromAuth(req: Request): Promise<string | undefined> {
-    try {
-        if (!auth) return undefined;
-        // `auth.handler` is provided by better-auth integration; call it with the Request
-        if (typeof (auth as any).handler === 'function') {
-            const maybe = await (auth as any).handler(req);
-            // try a few possible shapes for the returned object to find an email
-            const email = maybe?.user?.email || maybe?.session?.user?.email || maybe?.data?.user?.email || maybe?.user?.primaryEmail || undefined;
-            return typeof email === 'string' ? email : undefined;
-        }
-    } catch (err) {
-        console.error('deriveEmailFromAuth error', err);
-    }
-    return undefined;
-}
-
-function nodemailerFallbackAllowed(): boolean {
-    return process.env.WATCHLIST_ALLOW_SMTP_EMAIL === '1' || process.env.NODE_ENV !== 'production';
-}
-
-function resolveEmailFromRequest(req: Request, hint?: { bodyEmail?: string; queryEmail?: string; headersEmail?: string }): { email?: string; source: 'body' | 'query' | 'header' | 'auth' | 'nodemailer_env' | 'dev_fallback' | 'none'; detail?: string } {
-    // 1) request-provided
-    if (hint?.bodyEmail && typeof hint.bodyEmail === 'string') {
-        return { email: hint.bodyEmail, source: 'body' };
-    }
-    if (hint?.queryEmail && typeof hint.queryEmail === 'string') {
-        return { email: hint.queryEmail, source: 'query' };
-    }
-    if (hint?.headersEmail && typeof hint.headersEmail === 'string') {
-        return { email: hint.headersEmail, source: 'header' };
-    }
-    // 2) auth-derived (async caller will supplement)
-    // We cannot await here; caller will fill when available.
-    return { email: undefined, source: 'none' };
-}
-
 export async function GET(req: Request) {
     try {
         const url = new URL(req.url);
         const queryEmail = url.searchParams.get('email') || undefined;
         const headerEmail = req.headers.get('x-user-email') || req.headers.get('x-useremail') || undefined;
-        const resolved1 = resolveEmailFromRequest(req, { queryEmail, headersEmail: headerEmail });
-        let email = resolved1.email;
-        let emailSource = resolved1.source;
-        let emailDetail = resolved1.detail;
-
-        if (!email) {
-            const derived = await deriveEmailFromAuth(req);
-            if (derived) {
-                email = derived;
-                emailSource = 'auth';
-            }
-        }
-        if (!email && nodemailerFallbackAllowed() && process.env.NODEMAILER_EMAIL) {
-            email = process.env.NODEMAILER_EMAIL;
-            emailSource = 'nodemailer_env';
-            emailDetail = 'NODEMAILER_EMAIL';
-        }
-        if (!email && process.env.NODE_ENV !== 'production') {
-            const dev = process.env.DEV_WATCHLIST_EMAIL || process.env.NEXT_PUBLIC_DEV_EMAIL;
-            if (dev) {
-                email = dev;
-                emailSource = 'dev_fallback';
-                emailDetail = process.env.DEV_WATCHLIST_EMAIL ? 'DEV_WATCHLIST_EMAIL' : (process.env.NEXT_PUBLIC_DEV_EMAIL ? 'NEXT_PUBLIC_DEV_EMAIL' : undefined);
-            }
-        }
+        
+        const { email, emailSource, emailDetail } = await resolveEmailForRequest(req, { queryEmail, headersEmail: headerEmail });
 
         const items = await getWatchlistByEmail(email);
 
@@ -182,31 +123,8 @@ export async function POST(req: Request) {
 
         const queryEmail = url.searchParams.get('email') || undefined;
         const headerEmail = req.headers.get('x-user-email') || req.headers.get('x-useremail') || undefined;
-        const resolved1 = resolveEmailFromRequest(req, { bodyEmail, queryEmail, headersEmail: headerEmail });
-        let email = resolved1.email;
-        let emailSource = resolved1.source;
-        let emailDetail = resolved1.detail;
-
-        if (!email) {
-            const derived = await deriveEmailFromAuth(req);
-            if (derived) {
-                email = derived;
-                emailSource = 'auth';
-            }
-        }
-        if (!email && nodemailerFallbackAllowed() && process.env.NODEMAILER_EMAIL) {
-            email = process.env.NODEMAILER_EMAIL;
-            emailSource = 'nodemailer_env';
-            emailDetail = 'NODEMAILER_EMAIL';
-        }
-        if (!email && process.env.NODE_ENV !== 'production') {
-            const dev = process.env.DEV_WATCHLIST_EMAIL || process.env.NEXT_PUBLIC_DEV_EMAIL;
-            if (dev) {
-                email = dev;
-                emailSource = 'dev_fallback';
-                emailDetail = process.env.DEV_WATCHLIST_EMAIL ? 'DEV_WATCHLIST_EMAIL' : (process.env.NEXT_PUBLIC_DEV_EMAIL ? 'NEXT_PUBLIC_DEV_EMAIL' : undefined);
-            }
-        }
+        
+        const { email, emailSource, emailDetail } = await resolveEmailForRequest(req, { bodyEmail, queryEmail, headersEmail: headerEmail });
 
         // Parse optional numeric inputs
         const marketCapB = parseMarketCapToBillions((body as any)?.marketCapB ?? (body as any)?.marketCap);
@@ -247,32 +165,9 @@ export async function DELETE(req: Request) {
         const url = new URL(req.url);
         const queryEmail = url.searchParams.get('email') || undefined;
         const headerEmail = req.headers.get('x-user-email') || req.headers.get('x-useremail') || undefined;
-        const resolved1 = resolveEmailFromRequest(req, { queryEmail, headersEmail: headerEmail });
-        let email = resolved1.email;
-        let emailSource = resolved1.source;
-        let emailDetail = resolved1.detail;
         const symbol = url.searchParams.get('symbol') || undefined;
-
-        if (!email) {
-            const derived = await deriveEmailFromAuth(req);
-            if (derived) {
-                email = derived;
-                emailSource = 'auth';
-            }
-        }
-        if (!email && nodemailerFallbackAllowed() && process.env.NODEMAILER_EMAIL) {
-            email = process.env.NODEMAILER_EMAIL;
-            emailSource = 'nodemailer_env';
-            emailDetail = 'NODEMAILER_EMAIL';
-        }
-        if (!email && process.env.NODE_ENV !== 'production') {
-            const dev = process.env.DEV_WATCHLIST_EMAIL || process.env.NEXT_PUBLIC_DEV_EMAIL;
-            if (dev) {
-                email = dev;
-                emailSource = 'dev_fallback';
-                emailDetail = process.env.DEV_WATCHLIST_EMAIL ? 'DEV_WATCHLIST_EMAIL' : (process.env.NEXT_PUBLIC_DEV_EMAIL ? 'NEXT_PUBLIC_DEV_EMAIL' : undefined);
-            }
-        }
+        
+        const { email, emailSource, emailDetail } = await resolveEmailForRequest(req, { queryEmail, headersEmail: headerEmail });
 
         if (!symbol) return NextResponse.json({ success: false, error: 'missing symbol', meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } }, { status: 400 });
         const result = await removeSymbolFromWatchlist(email, symbol);

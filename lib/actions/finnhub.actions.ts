@@ -185,7 +185,7 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
 // New: fetch live quotes for symbols
 export async function getQuotes(symbols: string[]): Promise<Record<string, { price: string; change: string; percent: string }>> {
     try {
-        const token = process.env.FINNHUB_API_KEY; // Only server-side key
+        const token = process.env.NEXT_PUBLIC_FINNHUB_API_KEY; // Only server-side key
         if (!token) {
             console.error('getQuotes: FINNHUB API key is not configured');
             return {};

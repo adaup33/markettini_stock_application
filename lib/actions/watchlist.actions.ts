@@ -2,6 +2,7 @@
 
 import { connectToDb } from '@/database/mongoose';
 import { Watchlist } from '@/database/models/watchlist.model';
+import { resolveUserIdByEmail } from '@/lib/utils/auth-helpers';
 
 export async function getWatchlistSymbolsByEmail(email: string): Promise<string[]> {
     if (!email) return [];
@@ -39,21 +40,6 @@ export interface WatchlistRow {
     marketCapB?: number | null;
     peRatio?: number | null;
     alertPrice?: number | null;
-}
-
-async function resolveUserIdByEmail(email?: string): Promise<string | null> {
-    if (!email) return null;
-    const mongoose = await connectToDb();
-    const db = mongoose.connection.db;
-    if (!db) {
-        console.error('MongoDB connection not found');
-        return null;
-    }
-
-    const user = await db.collection('user').findOne<{ _id?: unknown; id?: string; email?: string }>({ email });
-    if (!user) return null;
-    const userId = (user.id as string) || String(user._id || '');
-    return userId || null;
 }
 
 export async function getWatchlistByEmail(email?: string): Promise<WatchlistRow[]> {
