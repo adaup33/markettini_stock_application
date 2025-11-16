@@ -9,6 +9,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { fetchWatchlist } from "@/lib/actions/watchlist-client.actions";
 
 const WATCHLIST_TABLE_HEADER = [
     "Company",
@@ -49,21 +50,10 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
         async function load() {
             setLoading(true);
             try {
-                const url = `/api/watchlist${
-                    email ? `?email=${encodeURIComponent(email)}` : ""
-                }`;
-                const res = await fetch(url);
+                const result = await fetchWatchlist(email);
 
-                if (!res.ok) {
-                    console.error('Failed to fetch watchlist, status:', res.status);
-                    if (mounted) setRows([]);
-                    return;
-                }
-
-                const json = await res.json();
-
-                if (mounted && json?.success && Array.isArray(json.data)) {
-                    const mapped = json.data.map((d: any) => ({
+                if (mounted && result.success && Array.isArray(result.data)) {
+                    const mapped = result.data.map((d: any) => ({
                         company: d.company || d.symbol,
                         symbol: d.symbol,
                         price: d.price || "-",
@@ -135,49 +125,6 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
              if (ws && ws.readyState === WebSocket.OPEN) ws.close();
          };
     }, [email]);
-
-    const handleWatchlistChange = async (symbol: string, next: boolean) => {
-        try {
-            if (next) {
-                /* Add to watchlist*/
-                await fetch("/api/watchlist", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, symbol }),
-                });
-            } else {
-                // Remove from watchlist
-                await fetch(
-                    `/api/watchlist?email=${encodeURIComponent(
-                        email || ""
-                    )}&symbol=${encodeURIComponent(symbol)}`,
-                    { method: "DELETE" }
-                );
-            }
-
-            // After change, refetch immediately to reflect authoritative state
-            const url = `/api/watchlist${email ? `?email=${encodeURIComponent(email)}` : ""}`;
-            const res = await fetch(url);
-            if (res.ok) {
-                const json = await res.json();
-                if (Array.isArray(json.data)) {
-                    const mapped = json.data.map((d: any) => ({
-                        company: d.company || d.symbol,
-                        symbol: d.symbol,
-                        price: d.price || "-",
-                        change: d.change || "-",
-                        marketCap: d.marketCap || "-",
-                        peRatio: d.peRatio || "-",
-                        alert: d.alert || "-",
-                        action: "View",
-                    }));
-                    setRows(mapped);
-                }
-            }
-        } catch (err) {
-            console.error("watchlist toggle error", err);
-        }
-    };
 
     const dataToRender = rows;
 

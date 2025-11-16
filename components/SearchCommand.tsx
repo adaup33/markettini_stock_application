@@ -125,29 +125,15 @@ export default function SearchCommand({ renderAs = 'button', label = 'Add stock'
                                             </div>
                                         </div>
                                     </Link>
-                                    {/* Star control to add/remove directly from search results */}
                                     <div className="ml-2">
                                         <WatchlistButton
                                             symbol={stock.symbol}
                                             company={stock.name || stock.symbol}
                                             isInWatchlist={!!stock.isInWatchlist}
                                             type="icon"
-                                            onWatchlistChange={async (symbol, isAdded) => {
+                                            onWatchlistChange={(symbol, isAdded) => {
                                                 // Optimistic update: update UI first
                                                 setStocks((prev) => prev.map((s) => s.symbol === symbol ? { ...s, isInWatchlist: isAdded } : s));
-                                                try {
-                                                    if (isAdded) {
-                                                        const res = await fetch('/api/watchlist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ symbol }) });
-                                                        if (!res.ok) throw new Error('Failed to add');
-                                                    } else {
-                                                        const res = await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, { method: 'DELETE' });
-                                                        if (!res.ok) throw new Error('Failed to remove');
-                                                    }
-                                                } catch (err) {
-                                                    console.error('watchlist toggle from search error', err);
-                                                    // Revert optimistic update on failure
-                                                    setStocks((prev) => prev.map((s) => s.symbol === symbol ? { ...s, isInWatchlist: !isAdded } : s));
-                                                }
                                             }}
                                         />
                                     </div>

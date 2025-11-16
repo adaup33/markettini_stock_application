@@ -1,5 +1,6 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import React, { useEffect } from "react";
+import { useWatchlistToggle } from "@/hooks/useWatchlistToggle";
 
 const WatchlistButton = ({
                              symbol,
@@ -9,48 +10,32 @@ const WatchlistButton = ({
                              type = "button",
                              onWatchlistChange,
                          }: WatchlistButtonProps) => {
-    const [added, setAdded] = useState<boolean>(isInWatchlist);
+    const { isInWatchlist: added, toggle, isLoading } = useWatchlistToggle(symbol, isInWatchlist, company);
 
-    const label = useMemo(() => {
+    // Sync external changes back to parent if callback provided
+    useEffect(() => {
+        if (onWatchlistChange && added !== isInWatchlist) {
+            onWatchlistChange(symbol, added);
+        }
+    }, [added, symbol, isInWatchlist, onWatchlistChange]);
+
+    const label = React.useMemo(() => {
         if (type === "icon") return added ? "" : "";
         return added ? "Remove from Watchlist" : "Add to Watchlist";
     }, [added, type]);
 
     const handleClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
-        const next = !added;
-        setAdded(next);
-
+        
         if (onWatchlistChange) {
+            // Let parent handle if callback provided
+            const next = !added;
             onWatchlistChange(symbol, next);
             return;
         }
 
-        // Default behavior: call API optimistically
-        try {
-            if (next) {
-                const devEmail = process.env.NEXT_PUBLIC_DEV_EMAIL as string | undefined;
-                const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-                if (devEmail) headers['x-user-email'] = devEmail;
-                const res = await fetch('/api/watchlist', {
-                    method: 'POST',
-                    headers,
-                    body: JSON.stringify(devEmail ? { symbol, company, email: devEmail } : { symbol, company }),
-                });
-                if (!res.ok) throw new Error('Failed to add');
-            } else {
-                const devEmail = process.env.NEXT_PUBLIC_DEV_EMAIL as string | undefined;
-                const headers: Record<string, string> = {};
-                if (devEmail) headers['x-user-email'] = devEmail;
-                const url = `/api/watchlist?symbol=${encodeURIComponent(symbol)}${devEmail ? `&email=${encodeURIComponent(devEmail)}` : ''}`;
-                const res = await fetch(url, { method: 'DELETE', headers });
-                if (!res.ok) throw new Error('Failed to remove');
-            }
-        } catch (err) {
-            console.error('watchlist toggle error', err);
-            // Revert optimistic update on failure
-            setAdded(!next);
-        }
+        // Otherwise use the hook's toggle
+        await toggle();
     };
 
     if (type === "icon") {
@@ -60,6 +45,7 @@ const WatchlistButton = ({
                 aria-label={added ? `Remove ${symbol} from watchlist` : `Add ${symbol} to watchlist`}
                 className={`watchlist-icon-btn ${added ? "watchlist-icon-added" : ""} focus:outline-none inline-flex items-center justify-center p-1 rounded`}
                 onClick={handleClick}
+                disabled={isLoading}
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -80,7 +66,11 @@ const WatchlistButton = ({
     }
 
     return (
-        <button className={`watchlist-btn ${added ? "watchlist-remove" : ""}`} onClick={handleClick}>
+        <button 
+            className={`watchlist-btn ${added ? "watchlist-remove" : ""}`} 
+            onClick={handleClick}
+            disabled={isLoading}
+        >
             {showTrashIcon && added ? (
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -93,7 +83,7 @@ const WatchlistButton = ({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-7 4v6m4-6v6m4-6v6" />
                 </svg>
             ) : null}
-            <span>{label}</span>
+            <span>{isLoading ? "..." : label}</span>
         </button>
     );
 };

@@ -110,26 +110,9 @@ export default function SearchPage() {
                     company={s.name || s.symbol}
                     isInWatchlist={!!s.isInWatchlist}
                     type="icon"
-                    onWatchlistChange={async (symbol, isAdded) => {
+                    onWatchlistChange={(symbol, isAdded) => {
                       // Optimistic update
                       setStocks((prev) => prev.map((x) => (x.symbol === symbol ? { ...x, isInWatchlist: isAdded } : x)));
-                      try {
-                        if (isAdded) {
-                          const res = await fetch("/api/watchlist", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ symbol }),
-                          });
-                          if (!res.ok) throw new Error("Failed to add");
-                        } else {
-                          const res = await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, { method: "DELETE" });
-                          if (!res.ok) throw new Error("Failed to remove");
-                        }
-                      } catch (err) {
-                        console.error("watchlist toggle from /search error", err);
-                        // revert
-                        setStocks((prev) => prev.map((x) => (x.symbol === symbol ? { ...x, isInWatchlist: !isAdded } : x)));
-                      }
                     }}
                   />
                 </div>
