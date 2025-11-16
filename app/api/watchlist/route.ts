@@ -166,9 +166,10 @@ export async function GET(req: Request) {
         });
 
         return NextResponse.json({ success: true, data: enriched, meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } });
-    } catch (err) {
+    } catch (err: any) {
         console.error('watchlist GET error', err);
-        return NextResponse.json({ success: false, error: 'failed' }, { status: 500 });
+        const errorMessage = err?.message || 'Failed to fetch watchlist';
+        return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
     }
 }
 
@@ -208,6 +209,14 @@ export async function POST(req: Request) {
             }
         }
 
+        // Validate required fields
+        if (!symbol) {
+            return NextResponse.json(
+                { success: false, error: 'Symbol is required', meta: { email: email ?? null } },
+                { status: 400 }
+            );
+        }
+
         // Parse optional numeric inputs
         const marketCapB = parseMarketCapToBillions((body as any)?.marketCapB ?? (body as any)?.marketCap);
         const peRatio = parseNumberMaybe((body as any)?.peRatio);
@@ -235,10 +244,19 @@ export async function POST(req: Request) {
         }
 
         const status = result?.success ? 200 : 400;
-        return NextResponse.json({ ...result, meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } }, { status });
-    } catch (err) {
+        const errorMessage = result?.error || (result?.success ? undefined : 'Failed to add to watchlist');
+        return NextResponse.json(
+            { 
+                success: result?.success, 
+                error: errorMessage,
+                meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } 
+            }, 
+            { status }
+        );
+    } catch (err: any) {
         console.error('watchlist POST error', err);
-        return NextResponse.json({ success: false, error: 'failed' }, { status: 500 });
+        const errorMessage = err?.message || 'Failed to add to watchlist';
+        return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
     }
 }
 
@@ -274,7 +292,13 @@ export async function DELETE(req: Request) {
             }
         }
 
-        if (!symbol) return NextResponse.json({ success: false, error: 'missing symbol', meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } }, { status: 400 });
+        if (!symbol) {
+            return NextResponse.json(
+                { success: false, error: 'Symbol is required', meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } },
+                { status: 400 }
+            );
+        }
+
         const result = await removeSymbolFromWatchlist(email, symbol);
 
         // Broadcast only on success
@@ -292,9 +316,18 @@ export async function DELETE(req: Request) {
         }
 
         const status = result?.success ? 200 : 400;
-        return NextResponse.json({ ...result, meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } }, { status });
-    } catch (err) {
+        const errorMessage = result?.error || (result?.success ? undefined : 'Failed to remove from watchlist');
+        return NextResponse.json(
+            { 
+                success: result?.success, 
+                error: errorMessage,
+                meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } 
+            }, 
+            { status }
+        );
+    } catch (err: any) {
         console.error('watchlist DELETE error', err);
-        return NextResponse.json({ success: false, error: 'failed' }, { status: 500 });
+        const errorMessage = err?.message || 'Failed to remove from watchlist';
+        return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
     }
 }
