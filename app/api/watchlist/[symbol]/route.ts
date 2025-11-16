@@ -11,11 +11,9 @@ function nodemailerFallbackAllowed(): boolean {
 async function deriveEmailFromAuth(req: Request): Promise<string | undefined> {
   try {
     if (!auth) return undefined;
-    if (typeof (auth as any).handler === 'function') {
-      const maybe = await (auth as any).handler(req);
-      const email = maybe?.user?.email || maybe?.session?.user?.email || maybe?.data?.user?.email || maybe?.user?.primaryEmail || undefined;
-      return typeof email === 'string' ? email : undefined;
-    }
+    const session = await auth.api.getSession({ headers: req.headers });
+    const email = session?.user?.email;
+    return typeof email === 'string' ? email : undefined;
   } catch (err) {
     console.error('alerts deriveEmailFromAuth error', err);
   }
