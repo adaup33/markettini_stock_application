@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { addSymbolToWatchlist, removeSymbolFromWatchlist, getWatchlistByEmail } from '@/lib/actions/watchlist.actions';
 import { auth } from '@/lib/better-auth/auth';
@@ -210,11 +212,11 @@ export async function POST(req: Request) {
         }
 
         // Validate required fields
+        if (!email) {
+            return NextResponse.json({ success: false, error: 'Missing email', meta: { email: null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null } }, { status: 400 });
+        }
         if (!symbol) {
-            return NextResponse.json(
-                { success: false, error: 'Symbol is required', meta: { email: email ?? null } },
-                { status: 400 }
-            );
+            return NextResponse.json({ success: false, error: 'Missing symbol', meta: { email: email, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null } }, { status: 400 });
         }
 
         // Parse optional numeric inputs
@@ -292,13 +294,12 @@ export async function DELETE(req: Request) {
             }
         }
 
-        if (!symbol) {
-            return NextResponse.json(
-                { success: false, error: 'Symbol is required', meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } },
-                { status: 400 }
-            );
+        if (!email) {
+            return NextResponse.json({ success: false, error: 'Missing email', meta: { email: null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } }, { status: 400 });
         }
-
+        if (!symbol) {
+            return NextResponse.json({ success: false, error: 'Missing symbol', meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } }, { status: 400 });
+        }
         const result = await removeSymbolFromWatchlist(email, symbol);
 
         // Broadcast only on success

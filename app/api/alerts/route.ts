@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { connectToDb } from '@/database/mongoose';
 import { Alert } from '@/database/models/alert.model';

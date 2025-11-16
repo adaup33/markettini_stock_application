@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { updateWatchlistFields } from '@/lib/actions/watchlist.actions';
 import { auth } from '@/lib/better-auth/auth';
@@ -65,7 +67,12 @@ export async function PATCH(req: Request, ctx: { params: { symbol: string } }) {
     }
 
     const symbol = ctx?.params?.symbol;
-    if (!symbol) return NextResponse.json({ success: false, error: 'missing symbol', meta: { email: email ?? null } }, { status: 400 });
+    if (!email) {
+      return NextResponse.json({ success: false, error: 'Missing email', meta: { email: null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null } }, { status: 400 });
+    }
+    if (!symbol) {
+      return NextResponse.json({ success: false, error: 'Missing symbol', meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null } }, { status: 400 });
+    }
 
     const marketCapB = parseNumber((body as any)?.marketCapB ?? (body as any)?.marketCap);
     const peRatio = parseNumber((body as any)?.peRatio);
