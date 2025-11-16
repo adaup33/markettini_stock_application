@@ -102,57 +102,56 @@ export default function SearchPage() {
             display.map((s, index) => (
               <li 
                 key={s.symbol} 
-                className="group hover:bg-gray-900/60 transition-all duration-200"
+                className="group hover:bg-gray-900/60 transition-all duration-200 px-4 py-3 flex items-center gap-3"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
+                <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                  <TrendingUp className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+                </div>
                 <Link 
                   href={`/stocks/${s.symbol}`}
-                  className="px-4 py-3 flex items-center gap-3 w-full"
+                  className="flex-1 min-w-0 flex flex-col cursor-pointer"
                 >
-                  <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                    <TrendingUp className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-100 truncate group-hover:text-emerald-400 transition-colors">{s.name || s.symbol}</div>
-                    <div className="text-xs text-gray-500 truncate">
-                      {s.symbol} • {s.exchange} • {s.type}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-emerald-500 hover:text-emerald-400 text-sm font-medium transition-colors opacity-0 group-hover:opacity-100">
-                      View →
-                    </span>
-                    <div onClick={(e) => e.preventDefault()}>
-                      <WatchlistButton
-                        symbol={s.symbol}
-                        company={s.name || s.symbol}
-                        isInWatchlist={!!s.isInWatchlist}
-                        type="icon"
-                        onWatchlistChange={async (symbol, isAdded) => {
-                          // Optimistic update
-                          setStocks((prev) => prev.map((x) => (x.symbol === symbol ? { ...x, isInWatchlist: isAdded } : x)));
-                          try {
-                            if (isAdded) {
-                              const res = await fetch("/api/watchlist", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ symbol }),
-                              });
-                              if (!res.ok) throw new Error("Failed to add");
-                            } else {
-                              const res = await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, { method: "DELETE" });
-                              if (!res.ok) throw new Error("Failed to remove");
-                            }
-                          } catch (err) {
-                            console.error("watchlist toggle from /search error", err);
-                            // revert
-                            setStocks((prev) => prev.map((x) => (x.symbol === symbol ? { ...x, isInWatchlist: !isAdded } : x)));
-                          }
-                        }}
-                      />
-                    </div>
+                  <div className="font-medium text-gray-100 truncate group-hover:text-emerald-400 transition-colors">{s.name || s.symbol}</div>
+                  <div className="text-xs text-gray-500 truncate">
+                    {s.symbol} • {s.exchange} • {s.type}
                   </div>
                 </Link>
+                <div className="flex items-center gap-3">
+                  <Link 
+                    href={`/stocks/${s.symbol}`}
+                    className="text-emerald-500 hover:text-emerald-400 text-sm font-medium transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    View →
+                  </Link>
+                  <WatchlistButton
+                    symbol={s.symbol}
+                    company={s.name || s.symbol}
+                    isInWatchlist={!!s.isInWatchlist}
+                    type="icon"
+                    onWatchlistChange={async (symbol, isAdded) => {
+                      // Optimistic update
+                      setStocks((prev) => prev.map((x) => (x.symbol === symbol ? { ...x, isInWatchlist: isAdded } : x)));
+                      try {
+                        if (isAdded) {
+                          const res = await fetch("/api/watchlist", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ symbol }),
+                          });
+                          if (!res.ok) throw new Error("Failed to add");
+                        } else {
+                          const res = await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, { method: "DELETE" });
+                          if (!res.ok) throw new Error("Failed to remove");
+                        }
+                      } catch (err) {
+                        console.error("watchlist toggle from /search error", err);
+                        // revert
+                        setStocks((prev) => prev.map((x) => (x.symbol === symbol ? { ...x, isInWatchlist: !isAdded } : x)));
+                      }
+                    }}
+                  />
+                </div>
               </li>
             ))
           )}
