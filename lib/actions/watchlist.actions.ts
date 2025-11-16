@@ -41,8 +41,21 @@ export interface WatchlistRow {
     alertPrice?: number | null;
 }
 
+// Simple in-memory cache for user ID lookups to reduce database queries
+// Cache entries expire after 5 minutes to ensure data freshness
+const userIdCache = new Map<string, { userId: string | null; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 async function resolveUserIdByEmail(email?: string): Promise<string | null> {
     if (!email) return null;
+
+    // Check cache first
+    const cached = userIdCache.get(email);
+    const now = Date.now();
+    if (cached && (now - cached.timestamp) < CACHE_TTL) {
+        return cached.userId;
+    }
+
     const mongoose = await connectToDb();
     const db = mongoose.connection.db;
     if (!db) {
@@ -51,9 +64,18 @@ async function resolveUserIdByEmail(email?: string): Promise<string | null> {
     }
 
     const user = await db.collection('user').findOne<{ _id?: unknown; id?: string; email?: string }>({ email });
-    if (!user) return null;
+    if (!user) {
+        // Cache null result to avoid repeated lookups for non-existent users
+        userIdCache.set(email, { userId: null, timestamp: now });
+        return null;
+    }
     const userId = (user.id as string) || String(user._id || '');
-    return userId || null;
+    const result = userId || null;
+    
+    // Cache the result
+    userIdCache.set(email, { userId: result, timestamp: now });
+    
+    return result;
 }
 
 export async function getWatchlistByEmail(email?: string): Promise<WatchlistRow[]> {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
     Table,
     TableBody,
@@ -115,10 +115,10 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
             }
         }
 
-         // Poll every 15 seconds for live updates
+         // Poll every 30 seconds for live updates (reduced from 15s to minimize server load)
          const interval = setInterval(() => {
              load();
-         }, 15000);
+         }, 30000);
 
          // Refresh on window focus or when document becomes visible
          const onVisibility = () => {
@@ -181,6 +181,9 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
 
     const dataToRender = rows;
 
+    // Memoize table headers to avoid recreation on every render
+    const tableHeaders = useMemo(() => WATCHLIST_TABLE_HEADER, []);
+
     if (loading) {
         return <div className="w-full p-4 text-center">Loading watchlist...</div>;
     }
@@ -190,7 +193,7 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        {WATCHLIST_TABLE_HEADER.map((header) => (
+                        {tableHeaders.map((header) => (
                             <TableHead key={header} className="text-left">
                                 {header}
                             </TableHead>

@@ -98,36 +98,44 @@ function resolveEmailFromRequest(req: Request, hint?: { bodyEmail?: string; quer
     return { email: undefined, source: 'none' };
 }
 
+// Consolidated email resolution helper to reduce code duplication
+async function resolveEmailWithFallbacks(req: Request, hint?: { bodyEmail?: string; queryEmail?: string; headersEmail?: string }): Promise<{ email: string | undefined; emailSource: string; emailDetail: string | undefined }> {
+    const resolved1 = resolveEmailFromRequest(req, hint);
+    let email = resolved1.email;
+    let emailSource = resolved1.source;
+    let emailDetail = resolved1.detail;
+
+    if (!email) {
+        const derived = await deriveEmailFromAuth(req);
+        if (derived) {
+            email = derived;
+            emailSource = 'auth';
+        }
+    }
+    if (!email && nodemailerFallbackAllowed() && process.env.NODEMAILER_EMAIL) {
+        email = process.env.NODEMAILER_EMAIL;
+        emailSource = 'nodemailer_env';
+        emailDetail = 'NODEMAILER_EMAIL';
+    }
+    if (!email && process.env.NODE_ENV !== 'production') {
+        const dev = process.env.DEV_WATCHLIST_EMAIL || process.env.NEXT_PUBLIC_DEV_EMAIL;
+        if (dev) {
+            email = dev;
+            emailSource = 'dev_fallback';
+            emailDetail = process.env.DEV_WATCHLIST_EMAIL ? 'DEV_WATCHLIST_EMAIL' : (process.env.NEXT_PUBLIC_DEV_EMAIL ? 'NEXT_PUBLIC_DEV_EMAIL' : undefined);
+        }
+    }
+
+    return { email, emailSource, emailDetail };
+}
+
 export async function GET(req: Request) {
     try {
         const url = new URL(req.url);
         const queryEmail = url.searchParams.get('email') || undefined;
         const headerEmail = req.headers.get('x-user-email') || req.headers.get('x-useremail') || undefined;
-        const resolved1 = resolveEmailFromRequest(req, { queryEmail, headersEmail: headerEmail });
-        let email = resolved1.email;
-        let emailSource = resolved1.source;
-        let emailDetail = resolved1.detail;
-
-        if (!email) {
-            const derived = await deriveEmailFromAuth(req);
-            if (derived) {
-                email = derived;
-                emailSource = 'auth';
-            }
-        }
-        if (!email && nodemailerFallbackAllowed() && process.env.NODEMAILER_EMAIL) {
-            email = process.env.NODEMAILER_EMAIL;
-            emailSource = 'nodemailer_env';
-            emailDetail = 'NODEMAILER_EMAIL';
-        }
-        if (!email && process.env.NODE_ENV !== 'production') {
-            const dev = process.env.DEV_WATCHLIST_EMAIL || process.env.NEXT_PUBLIC_DEV_EMAIL;
-            if (dev) {
-                email = dev;
-                emailSource = 'dev_fallback';
-                emailDetail = process.env.DEV_WATCHLIST_EMAIL ? 'DEV_WATCHLIST_EMAIL' : (process.env.NEXT_PUBLIC_DEV_EMAIL ? 'NEXT_PUBLIC_DEV_EMAIL' : undefined);
-            }
-        }
+        
+        const { email, emailSource, emailDetail } = await resolveEmailWithFallbacks(req, { queryEmail, headersEmail: headerEmail });
 
         const items = await getWatchlistByEmail(email);
 
@@ -181,31 +189,8 @@ export async function POST(req: Request) {
 
         const queryEmail = url.searchParams.get('email') || undefined;
         const headerEmail = req.headers.get('x-user-email') || req.headers.get('x-useremail') || undefined;
-        const resolved1 = resolveEmailFromRequest(req, { bodyEmail, queryEmail, headersEmail: headerEmail });
-        let email = resolved1.email;
-        let emailSource = resolved1.source;
-        let emailDetail = resolved1.detail;
-
-        if (!email) {
-            const derived = await deriveEmailFromAuth(req);
-            if (derived) {
-                email = derived;
-                emailSource = 'auth';
-            }
-        }
-        if (!email && nodemailerFallbackAllowed() && process.env.NODEMAILER_EMAIL) {
-            email = process.env.NODEMAILER_EMAIL;
-            emailSource = 'nodemailer_env';
-            emailDetail = 'NODEMAILER_EMAIL';
-        }
-        if (!email && process.env.NODE_ENV !== 'production') {
-            const dev = process.env.DEV_WATCHLIST_EMAIL || process.env.NEXT_PUBLIC_DEV_EMAIL;
-            if (dev) {
-                email = dev;
-                emailSource = 'dev_fallback';
-                emailDetail = process.env.DEV_WATCHLIST_EMAIL ? 'DEV_WATCHLIST_EMAIL' : (process.env.NEXT_PUBLIC_DEV_EMAIL ? 'NEXT_PUBLIC_DEV_EMAIL' : undefined);
-            }
-        }
+        
+        const { email, emailSource, emailDetail } = await resolveEmailWithFallbacks(req, { bodyEmail, queryEmail, headersEmail: headerEmail });
 
         // Validate required fields
         if (!email) {
@@ -263,32 +248,9 @@ export async function DELETE(req: Request) {
         const url = new URL(req.url);
         const queryEmail = url.searchParams.get('email') || undefined;
         const headerEmail = req.headers.get('x-user-email') || req.headers.get('x-useremail') || undefined;
-        const resolved1 = resolveEmailFromRequest(req, { queryEmail, headersEmail: headerEmail });
-        let email = resolved1.email;
-        let emailSource = resolved1.source;
-        let emailDetail = resolved1.detail;
         const symbol = url.searchParams.get('symbol') || undefined;
-
-        if (!email) {
-            const derived = await deriveEmailFromAuth(req);
-            if (derived) {
-                email = derived;
-                emailSource = 'auth';
-            }
-        }
-        if (!email && nodemailerFallbackAllowed() && process.env.NODEMAILER_EMAIL) {
-            email = process.env.NODEMAILER_EMAIL;
-            emailSource = 'nodemailer_env';
-            emailDetail = 'NODEMAILER_EMAIL';
-        }
-        if (!email && process.env.NODE_ENV !== 'production') {
-            const dev = process.env.DEV_WATCHLIST_EMAIL || process.env.NEXT_PUBLIC_DEV_EMAIL;
-            if (dev) {
-                email = dev;
-                emailSource = 'dev_fallback';
-                emailDetail = process.env.DEV_WATCHLIST_EMAIL ? 'DEV_WATCHLIST_EMAIL' : (process.env.NEXT_PUBLIC_DEV_EMAIL ? 'NEXT_PUBLIC_DEV_EMAIL' : undefined);
-            }
-        }
+        
+        const { email, emailSource, emailDetail } = await resolveEmailWithFallbacks(req, { queryEmail, headersEmail: headerEmail });
 
         if (!email) {
             return NextResponse.json({ success: false, error: 'Missing email', meta: { email: null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } }, { status: 400 });

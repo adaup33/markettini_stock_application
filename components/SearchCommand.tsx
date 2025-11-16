@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState, useMemo } from "react"
 import { CommandDialog, CommandEmpty, CommandInput, CommandList } from "@/components/ui/command"
 import {Button} from "@/components/ui/button";
 import {Loader2,  TrendingUp} from "lucide-react";
@@ -15,7 +15,11 @@ export default function SearchCommand({ renderAs = 'button', label = 'Add stock'
     const [stocks, setStocks] = useState<StockWithWatchlistStatus[]>(initialStocks ?? []);
 
     const isSearchMode = !!searchTerm.trim();
-    const displayStocks = isSearchMode ? stocks : stocks?.slice(0, 10);
+    
+    // Memoize displayStocks to avoid recalculation on every render
+    const displayStocks = useMemo(() => {
+        return isSearchMode ? stocks : stocks?.slice(0, 10);
+    }, [isSearchMode, stocks]);
 
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent) => {
