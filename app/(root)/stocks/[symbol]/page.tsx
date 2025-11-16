@@ -10,6 +10,7 @@ import {
 } from "@/lib/constants";
 import { auth } from "@/lib/better-auth/auth";
 import { getWatchlistSymbolsByEmail } from "@/lib/actions/watchlist.actions";
+import { headers } from "next/headers";
 
 export default async function StockDetails({ params }: StockDetailsPageProps) {
     const { symbol } = await params;
@@ -18,7 +19,7 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
     // Check if symbol is in user's watchlist
     let isInWatchlist = false;
     try {
-        const session = await auth.api.getSession();
+        const session = await auth.api.getSession({ headers: await headers() });
         if (session?.user?.email) {
             const watchlistSymbols = await getWatchlistSymbolsByEmail(session.user.email);
             isInWatchlist = watchlistSymbols.includes(symbol.toUpperCase());
