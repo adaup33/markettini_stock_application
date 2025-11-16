@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo, useMemo, useState, Suspense } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import useTradingViewWidget from "@/hooks/useTradingViewWidget";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +15,7 @@ interface TradingViewWidgetProps {
 // Loading skeleton component
 const WidgetSkeleton = ({ height }: { height: number }) => (
     <div 
-        className="bg-gray-900/60 border border-gray-800 rounded-lg flex items-center justify-center animate-pulse"
+        className="absolute inset-0 bg-gray-900/60 border border-gray-800 rounded-lg flex items-center justify-center animate-pulse z-10"
         style={{ height, width: "100%" }}
     >
         <div className="flex flex-col items-center gap-3">
@@ -49,20 +49,16 @@ function TradingViewWidget({
                     {title}
                 </h3>
             )}
-            <Suspense fallback={<WidgetSkeleton height={height} />}>
+            <div className="relative" style={{ minHeight: height }}>
+                {/* Loading skeleton - positioned absolutely to overlay */}
+                {!isLoaded && <WidgetSkeleton height={height} />}
+                {/* Widget container - this is where TradingView will inject its content */}
                 <div
-                    className={cn('tradingview-widget-container relative', className)}
+                    className={cn('tradingview-widget-container__widget', className)}
                     ref={containerRef}
-                >
-                    {/* Loading skeleton */}
-                    {!isLoaded && <WidgetSkeleton height={height} />}
-                    {/* This inner div is created by the hook */}
-                    <div
-                        className={cn("tradingview-widget-container__widget transition-opacity duration-300", isLoaded ? "opacity-100" : "opacity-0")}
-                        style={{ height, width: "100%" }}
-                    />
-                </div>
-            </Suspense>
+                    style={{ height, width: "100%" }}
+                />
+            </div>
         </div>
     );
 }

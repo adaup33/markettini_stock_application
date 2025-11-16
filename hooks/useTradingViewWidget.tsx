@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useCallback } from "react";
 
 const useTradingViewWidget = (
     scriptUrl: string,
@@ -8,6 +8,12 @@ const useTradingViewWidget = (
     onLoad?: () => void
 ) => {
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const onLoadRef = useRef(onLoad);
+
+    // Update ref when callback changes
+    useEffect(() => {
+        onLoadRef.current = onLoad;
+    }, [onLoad]);
 
     // Stabilize config to prevent unnecessary re-renders
     const stableConfig = useMemo(
@@ -16,40 +22,61 @@ const useTradingViewWidget = (
     );
 
     useEffect(() => {
-        // ✅ FIX: Capture ref at effect start to avoid stale closure
         const container = containerRef.current;
 
         if (!container) return;
         if (container.dataset.loaded) return;
 
-        // Create widget container
-        container.innerHTML = `<div class="tradingview-widget-container__widget" style="width: 100%; height: ${height}px;"></div>`;
+        // Mark as loading to prevent duplicate initialization
+        container.dataset.loaded = 'true';
 
         // Create script
         const script = document.createElement("script");
         script.src = scriptUrl;
         script.async = true;
-        script.textContent = stableConfig;  // ✅ FIX: Use textContent instead of innerHTML
+        script.textContent = stableConfig;
+
+        // Set timeout to mark as loaded even if script fails
+        const timeoutId = setTimeout(() => {
+            if (onLoadRef.current) {
+                onLoadRef.current();
+            }
+        }, 10000); // 10 second timeout
 
         // Add load event listener
         script.onload = () => {
+            clearTimeout(timeoutId);
             // Give the widget a moment to render
             setTimeout(() => {
-                if (onLoad) onLoad();
-            }, 300);
+                if (onLoadRef.current) {
+                    onLoadRef.current();
+                }
+            }, 500);
+        };
+
+        // Add error event listener
+        script.onerror = () => {
+            clearTimeout(timeoutId);
+            console.error('Failed to load TradingView widget:', scriptUrl);
+            // Still call onLoad to hide skeleton
+            if (onLoadRef.current) {
+                onLoadRef.current();
+            }
         };
 
         container.appendChild(script);
-        container.dataset.loaded = 'true';
 
-        // ✅ FIX: Use captured container reference in cleanup
         return () => {
+            clearTimeout(timeoutId);
             if (container) {
-                container.innerHTML = '';
+                // Only clear the container content, don't remove the div that React rendered
+                while (container.firstChild) {
+                    container.removeChild(container.firstChild);
+                }
                 delete container.dataset.loaded;
             }
         }
-    }, [scriptUrl, stableConfig, height, onLoad]);  // ✅ FIX: Use stableConfig instead of config
+    }, [scriptUrl, stableConfig, height]);
 
     return containerRef;
 }
