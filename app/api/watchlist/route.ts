@@ -142,18 +142,26 @@ export async function GET(req: Request) {
         // Attach live quotes when possible
         const symbols = items.map((it) => it.symbol).filter(Boolean);
         let quotes: Record<string, { price: string; change: string; percent: string }> = {};
+        let metrics: Record<string, { marketCapB: number | null; peRatio: number | null }> = {};
         try {
             if (symbols.length > 0) {
-                quotes = await getQuotes(symbols);
+                // Fetch quotes and metrics in parallel
+                const [quotesData, metricsData] = await Promise.all([
+                    getQuotes(symbols),
+                    import('@/lib/actions/finnhub.actions').then(m => m.getCompanyMetrics(symbols))
+                ]);
+                quotes = quotesData;
+                metrics = metricsData;
             }
         } catch (e) {
-            console.error('Error fetching quotes', e);
+            console.error('Error fetching quotes or metrics', e);
             quotes = {};
+            metrics = {};
         }
 
         const enriched = items.map((it) => {
-            const marketCapB = (it as any).marketCapB ?? null;
-            const pe = (it as any).peRatio ?? null;
+            const marketCapB = (it as any).marketCapB ?? metrics[it.symbol]?.marketCapB ?? null;
+            const pe = (it as any).peRatio ?? metrics[it.symbol]?.peRatio ?? null;
             const alertPrice = (it as any).alertPrice ?? null;
             const addedPrice = (it as any).addedPrice ?? null;
             return {

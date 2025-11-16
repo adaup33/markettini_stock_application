@@ -72,7 +72,7 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
 
                 {/* Right column */}
                 <div className="flex flex-col gap-6">
-                    <div className="animate-slide-in-right animation-delay-100">
+                    <div className="animate-slide-in-right">
                         <TradingViewWidget
                             scriptUrl={`${scriptUrl}technical-analysis.js`}
                             config={TECHNICAL_ANALYSIS_WIDGET_CONFIG(symbol)}
@@ -80,7 +80,7 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
                         />
                     </div>
 
-                    <div className="animate-slide-in-right animation-delay-200">
+                    <div className="animate-slide-in-right animation-delay-100">
                         <TradingViewWidget
                             scriptUrl={`${scriptUrl}company-profile.js`}
                             config={COMPANY_PROFILE_WIDGET_CONFIG(symbol)}
@@ -88,7 +88,7 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
                         />
                     </div>
 
-                    <div className="animate-slide-in-right animation-delay-300">
+                    <div className="animate-slide-in-right animation-delay-200">
                         <TradingViewWidget
                             scriptUrl={`${scriptUrl}financials.js`}
                             config={COMPANY_FINANCIALS_WIDGET_CONFIG(symbol)}
