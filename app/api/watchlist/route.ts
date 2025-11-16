@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { addSymbolToWatchlist, removeSymbolFromWatchlist, getWatchlistByEmail } from '@/lib/actions/watchlist.actions';
 import { getQuotes } from '@/lib/actions/finnhub.actions';
-import { resolveEmailWithFallbacks, nodemailerFallbackAllowed } from '@/lib/actions/auth.actions';
+import { resolveEmailWithFallbacks, nodemailerFallbackAllowed } from '@/lib/utils/email-resolution';
 
 // Helper formatting functions
 function formatPeRatio(n: number | null | undefined): string {

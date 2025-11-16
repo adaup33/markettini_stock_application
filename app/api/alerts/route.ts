@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectToDb } from '@/database/mongoose';
 import { Alert } from '@/database/models/alert.model';
-import { resolveEmailWithFallbacks } from '@/lib/actions/auth.actions';
+import { resolveEmailWithFallbacks } from '@/lib/utils/email-resolution';
 
 // Helper functions for alert operations
 async function resolveUserIdByEmail(email?: string): Promise<string | null> {
