@@ -16,12 +16,14 @@ const ProfilePage = async () => {
     }
 
     return (
-        <div className="flex min-h-screen flex-col p-6">
-            <div className="mb-6">
+        <div className="flex flex-col gap-6">
+            <div>
                 <h1 className="text-3xl font-bold text-gray-100">Profile</h1>
                 <p className="text-gray-400 mt-2">Manage your account settings and preferences</p>
             </div>
-            <ProfileForm user={userProfile} />
+            <div className="rounded-lg border border-gray-800 bg-gray-900/40 p-6">
+                <ProfileForm user={userProfile} />
+            </div>
         </div>
     );
 };

@@ -1,0 +1,84 @@
+%% erd.mmd - Mermaid ER diagram
+erDiagram
+  USERS {
+    VARCHAR id PK "string id (from auth)"
+    CHAR _id "mongo ObjectId"
+    VARCHAR name
+    VARCHAR email
+    VARCHAR country
+    TIMESTAMP created_at
+  }
+
+  WATCHLISTS {
+    CHAR id PK "mongo _id"
+    VARCHAR user_id FK "-> users.id"
+    VARCHAR symbol
+    VARCHAR company
+    TIMESTAMP added_at
+    DOUBLE market_cap_b
+    DOUBLE pe_ratio
+    DOUBLE alert_price
+  }
+
+  ALERTS {
+    CHAR id PK "mongo _id"
+    VARCHAR user_id FK "-> users.id"
+    VARCHAR symbol
+    VARCHAR operator
+    DOUBLE threshold
+    BOOLEAN active
+    TEXT note
+    TIMESTAMP created_at
+    TIMESTAMP last_triggered_at
+  }
+
+  ALERT_TRIGGERS {
+    CHAR id PK
+    CHAR alert_id FK "-> alerts.id"
+    TIMESTAMP triggered_at
+    DOUBLE price_at_trigger
+    TEXT message
+  }
+
+  WATCHLIST_SNAPSHOTS {
+    CHAR id PK
+    CHAR watchlist_id FK "-> watchlists.id"
+    TIMESTAMP captured_at
+    DOUBLE price
+    DOUBLE change_amount
+    DOUBLE change_percent
+  }
+
+  ACCOUNTS {
+    CHAR id PK "mongo _id"
+    VARCHAR user_id FK "-> users.id"
+    VARCHAR provider "e.g. 'github', 'google'"
+    VARCHAR provider_account_id "provider account id"
+    VARCHAR type "oauth / oauth2 / credentials"
+    TEXT provider_access_token
+    TEXT provider_refresh_token
+    TIMESTAMP expires_at
+    TEXT scope
+    VARCHAR token_type
+    TIMESTAMP created_at
+  }
+
+  SESSIONS {
+    CHAR id PK "mongo _id"
+    VARCHAR user_id FK "-> users.id"
+    VARCHAR session_token UNIQUE
+    TIMESTAMP expires
+    TIMESTAMP created_at
+    VARCHAR ip_address
+    TEXT user_agent
+  }
+
+  USERS ||--o{ WATCHLISTS : "has"
+  USERS ||--o{ ALERTS : "creates"
+  WATCHLISTS ||--o{ WATCHLIST_SNAPSHOTS : "captures"
+  ALERTS ||--o{ ALERT_TRIGGERS : "fires"
+  USERS ||--o{ ACCOUNTS : "linked"
+  USERS ||--o{ SESSIONS : "maintains"
+  %% implied association: alerts reference (user_id, symbol)
+  WATCHLISTS ||--o{ ALERTS : "related by (user_id, symbol) (optional)"
+

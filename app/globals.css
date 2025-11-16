@@ -266,6 +266,10 @@
         @apply flex flex-col items-center justify-center text-center;
     }
     .watchlist-star {
+        @apply h-4 w-4 text-gray-500;
+    }
+    /* Optional large variant for empty-state illustrations */
+    .watchlist-star-lg {
         @apply h-16 w-16 text-gray-500 mb-4;
     }
     .empty-title {

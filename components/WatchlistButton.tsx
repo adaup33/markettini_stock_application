@@ -3,6 +3,7 @@ import React, { useMemo, useState } from "react";
 
 const WatchlistButton = ({
                              symbol,
+                             company,
                              isInWatchlist,
                              showTrashIcon = false,
                              type = "button",
@@ -15,11 +16,41 @@ const WatchlistButton = ({
         return added ? "Remove from Watchlist" : "Add to Watchlist";
     }, [added, type]);
 
-    const handleClick = (e: React.MouseEvent) => {
+    const handleClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
         const next = !added;
         setAdded(next);
-        onWatchlistChange?.(symbol, next);
+
+        if (onWatchlistChange) {
+            onWatchlistChange(symbol, next);
+            return;
+        }
+
+        // Default behavior: call API optimistically
+        try {
+            if (next) {
+                const devEmail = process.env.NEXT_PUBLIC_DEV_EMAIL as string | undefined;
+                const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+                if (devEmail) headers['x-user-email'] = devEmail;
+                const res = await fetch('/api/watchlist', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(devEmail ? { symbol, company, email: devEmail } : { symbol, company }),
+                });
+                if (!res.ok) throw new Error('Failed to add');
+            } else {
+                const devEmail = process.env.NEXT_PUBLIC_DEV_EMAIL as string | undefined;
+                const headers: Record<string, string> = {};
+                if (devEmail) headers['x-user-email'] = devEmail;
+                const url = `/api/watchlist?symbol=${encodeURIComponent(symbol)}${devEmail ? `&email=${encodeURIComponent(devEmail)}` : ''}`;
+                const res = await fetch(url, { method: 'DELETE', headers });
+                if (!res.ok) throw new Error('Failed to remove');
+            }
+        } catch (err) {
+            console.error('watchlist toggle error', err);
+            // Revert optimistic update on failure
+            setAdded(!next);
+        }
     };
 
     if (type === "icon") {
@@ -27,7 +58,7 @@ const WatchlistButton = ({
             <button
                 title={added ? `Remove ${symbol} from watchlist` : `Add ${symbol} to watchlist`}
                 aria-label={added ? `Remove ${symbol} from watchlist` : `Add ${symbol} to watchlist`}
-                className={`watchlist-icon-btn ${added ? "watchlist-icon-added" : ""} focus:outline-none`}
+                className={`watchlist-icon-btn ${added ? "watchlist-icon-added" : ""} focus:outline-none inline-flex items-center justify-center p-1 rounded`}
                 onClick={handleClick}
             >
                 <svg
@@ -36,7 +67,7 @@ const WatchlistButton = ({
                     fill={added ? "#F59E0B" : "none"}
                     stroke={added ? "#DD6B20" : "#9CA3AF"}
                     strokeWidth="1.5"
-                    className="watchlist-star h-5 w-5"
+                    className="watchlist-star h-4 w-4"
                 >
                     <path
                         strokeLinecap="round"

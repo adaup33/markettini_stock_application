@@ -14,7 +14,7 @@ const Layout = async ({ children }: { children : React.ReactNode }) => {
             <section className="auth-left-section scrollbar-hide-default">
                 <Link href="/" className="auth-logo">
                     <div className="h-8 flex items-center">
-                        <span className="text-2xl font-extrabold tracking-tight text-emerald-600">Marketinni</span>
+                        <span className="text-2xl font-extrabold tracking-tight text-emerald-500">Marketimi</span>
                     </div>
                 </Link>
 
