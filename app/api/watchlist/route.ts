@@ -155,6 +155,7 @@ export async function GET(req: Request) {
             const marketCapB = (it as any).marketCapB ?? null;
             const pe = (it as any).peRatio ?? null;
             const alertPrice = (it as any).alertPrice ?? null;
+            const addedPrice = (it as any).addedPrice ?? null;
             return {
                 ...it,
                 // formatted display fields expected by the UI table
@@ -165,6 +166,7 @@ export async function GET(req: Request) {
                 marketCapB: marketCapB,
                 peRatioRaw: pe,
                 alertPriceRaw: alertPrice,
+                addedPrice: addedPrice, // price when added
                 // live quotes
                 price: quotes[it.symbol]?.price ?? '-',
                 change: quotes[it.symbol]?.percent ?? quotes[it.symbol]?.change ?? '-',
@@ -204,11 +206,30 @@ export async function POST(req: Request) {
         const marketCapB = parseMarketCapToBillions((body as any)?.marketCapB ?? (body as any)?.marketCap);
         const peRatio = parseNumberMaybe((body as any)?.peRatio);
         const alertPrice = parseNumberMaybe((body as any)?.alertPrice ?? (body as any)?.alert);
+        const addedPrice = parseNumberMaybe((body as any)?.addedPrice);
+
+        // If no addedPrice provided, try to fetch current price from Finnhub
+        let finalAddedPrice = addedPrice;
+        if (finalAddedPrice == null && symbol) {
+            try {
+                const quotes = await getQuotes([symbol]);
+                const priceStr = quotes[symbol]?.price;
+                if (priceStr) {
+                    const match = priceStr.match(/[\d.]+/);
+                    if (match) {
+                        finalAddedPrice = parseFloat(match[0]);
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to fetch current price for addedPrice', e);
+            }
+        }
 
         const result = await addSymbolToWatchlist(email, symbol as string, company as string, {
             marketCapB: marketCapB,
             peRatio: peRatio,
             alertPrice: alertPrice,
+            addedPrice: finalAddedPrice,
         });
 
         // Broadcast only on success

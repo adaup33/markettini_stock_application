@@ -39,6 +39,7 @@ export interface WatchlistRow {
     marketCapB?: number | null;
     peRatio?: number | null;
     alertPrice?: number | null;
+    addedPrice?: number | null;
 }
 
 // Simple in-memory cache for user ID lookups to reduce database queries
@@ -92,6 +93,7 @@ export async function getWatchlistByEmail(email?: string): Promise<WatchlistRow[
             marketCapB: (it as any).marketCapB ?? null,
             peRatio: (it as any).peRatio ?? null,
             alertPrice: (it as any).alertPrice ?? null,
+            addedPrice: (it as any).addedPrice ?? null,
         }));
     } catch (err) {
         console.error('getWatchlistByEmail error:', err);
@@ -99,7 +101,7 @@ export async function getWatchlistByEmail(email?: string): Promise<WatchlistRow[
     }
 }
 
-export type WatchlistNumericFields = { marketCapB?: number | null; peRatio?: number | null; alertPrice?: number | null };
+export type WatchlistNumericFields = { marketCapB?: number | null; peRatio?: number | null; alertPrice?: number | null; addedPrice?: number | null };
 
 export async function addSymbolToWatchlist(
     email: string | undefined,
@@ -120,6 +122,7 @@ export async function addSymbolToWatchlist(
             if (extras.marketCapB != null) $set.marketCapB = extras.marketCapB;
             if (extras.peRatio != null) $set.peRatio = extras.peRatio;
             if (extras.alertPrice != null) $set.alertPrice = extras.alertPrice;
+            if (extras.addedPrice != null) $set.addedPrice = extras.addedPrice;
         }
 
         // Upsert and apply numeric fields if provided
@@ -164,6 +167,7 @@ export async function updateWatchlistFields(
         if (fields.marketCapB != null) $set.marketCapB = fields.marketCapB;
         if (fields.peRatio != null) $set.peRatio = fields.peRatio;
         if (fields.alertPrice != null) $set.alertPrice = fields.alertPrice;
+        if (fields.addedPrice != null) $set.addedPrice = fields.addedPrice;
         if (Object.keys($set).length === 0) return { success: true };
         await Watchlist.updateOne({ userId, symbol: normalized }, { $set });
         return { success: true };

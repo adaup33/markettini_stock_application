@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Bell, Check, Pencil, Trash2, ToggleLeft, ToggleRight, X } from "lucide-react";
 import { toast } from "sonner";
+import { StockSymbolSearch } from "@/components/StockSymbolSearch";
 
 // Shape returned by our /api/alerts endpoints
 type AlertItemDto = {
@@ -219,7 +220,7 @@ export default function AlertsPage() {
       <div className="rounded-lg border border-gray-800 bg-gray-900/40 p-4 flex flex-col gap-3">
         <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
           <div className="md:col-span-1">
-            <Input placeholder="Symbol (e.g., AAPL)" value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} />
+            <StockSymbolSearch value={symbol} onChange={setSymbol} placeholder="Search symbol..." />
           </div>
           <div className="md:col-span-1">
             <Select value={operator} onValueChange={(v) => setOperator(v as any)}>

@@ -9,6 +9,7 @@ export interface WatchlistItem extends Document {
     marketCapB?: number; // stored in billions
     peRatio?: number;
     alertPrice?: number; // per-row alert price target
+    addedPrice?: number; // price when stock was added to watchlist
 }
 
 const WatchlistSchema = new Schema<WatchlistItem>(
@@ -21,6 +22,7 @@ const WatchlistSchema = new Schema<WatchlistItem>(
         marketCapB: { type: Number, required: false, default: undefined },
         peRatio: { type: Number, required: false, default: undefined },
         alertPrice: { type: Number, required: false, default: undefined },
+        addedPrice: { type: Number, required: false, default: undefined }, // price when added
     },
     { timestamps: false }
 );

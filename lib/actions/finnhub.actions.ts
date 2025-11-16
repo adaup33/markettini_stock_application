@@ -6,6 +6,14 @@ import { POPULAR_STOCK_SYMBOLS } from '@/lib/constants';
 import { cache } from 'react';
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
 
+// Cache duration constants (in seconds)
+const CACHE_DURATIONS = {
+    QUOTES: 15,          // 15 seconds for live quotes
+    SEARCH: 1800,        // 30 minutes for search results
+    PROFILES: 3600,      // 1 hour for company profiles
+    NEWS: 300,           // 5 minutes for news
+} as const;
+
 export async function fetchJSON<T>(url: string, revalidateSeconds?: number): Promise<T> {
     const options: RequestInit & { next?: { revalidate?: number } } = revalidateSeconds
         ? { cache: 'force-cache', next: { revalidate: revalidateSeconds } }
@@ -43,7 +51,7 @@ export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> 
                 cleanSymbols.map(async (sym) => {
                     try {
                         const url = `${FINNHUB_BASE_URL}/company-news?symbol=${encodeURIComponent(sym)}&from=${range.from}&to=${range.to}&token=${token}`;
-                        const articles = await fetchJSON<RawNewsArticle[]>(url, 300);
+                        const articles = await fetchJSON<RawNewsArticle[]>(url, CACHE_DURATIONS.NEWS);
                         perSymbolArticles[sym] = (articles || []).filter(validateArticle);
                     } catch (e) {
                         console.error('Error fetching company news for', sym, e);
@@ -78,7 +86,7 @@ export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> 
         // General market news fallback or when no symbols provided
         try {
             const generalUrl = `${FINNHUB_BASE_URL}/news?category=general&token=${token}`;
-            const general = await fetchJSON<RawNewsArticle[]>(generalUrl, 300);
+            const general = await fetchJSON<RawNewsArticle[]>(generalUrl, CACHE_DURATIONS.NEWS);
 
             const seen = new Set<string>();
             const unique: RawNewsArticle[] = [];
@@ -123,8 +131,8 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
                 top.map(async (sym) => {
                     try {
                         const url = `${FINNHUB_BASE_URL}/stock/profile2?symbol=${encodeURIComponent(sym)}&token=${token}`;
-                        // Revalidate every hour
-                        const profile = await fetchJSON(url, 3600);
+                        // Revalidate every hour for profiles
+                        const profile = await fetchJSON(url, CACHE_DURATIONS.PROFILES);
                         return { sym, profile } as { sym: string; profile: any };
                     } catch (e) {
                         console.error('Error fetching profile2 for', sym, e);
@@ -154,7 +162,7 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
                 .filter((x): x is FinnhubSearchResult => Boolean(x));
         } else {
             const url = `${FINNHUB_BASE_URL}/search?q=${encodeURIComponent(trimmed)}&token=${token}`;
-            const data = await fetchJSON<FinnhubSearchResponse>(url, 1800);
+            const data = await fetchJSON<FinnhubSearchResponse>(url, CACHE_DURATIONS.SEARCH);
             results = Array.isArray(data?.result) ? data.result : [];
         }
 
@@ -202,7 +210,7 @@ export async function getQuotes(symbols: string[]): Promise<Record<string, { pri
                 try {
                     const url = `${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(sym)}&token=${token}`;
                     // short cache for quotes
-                    const data = await fetchJSON<any>(url, 15);
+                    const data = await fetchJSON<any>(url, CACHE_DURATIONS.QUOTES);
                     return { sym, data };
                 } catch (e) {
                     console.error('getQuotes error for', sym, e);

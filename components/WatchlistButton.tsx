@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -11,6 +12,7 @@ const WatchlistButton = ({
                              onWatchlistChange,
                          }: WatchlistButtonProps) => {
     const [added, setAdded] = useState<boolean>(isInWatchlist);
+    const [isAnimating, setIsAnimating] = useState(false);
 
     const label = useMemo(() => {
         if (type === "icon") return added ? "" : "";
@@ -20,6 +22,11 @@ const WatchlistButton = ({
     const handleClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
         const next = !added;
+        
+        // Trigger animation
+        setIsAnimating(true);
+        setTimeout(() => setIsAnimating(false), 300);
+        
         setAdded(next);
 
         if (onWatchlistChange) {
@@ -42,7 +49,10 @@ const WatchlistButton = ({
                     const data = await res.json().catch(() => ({ error: 'Failed to add to watchlist' }));
                     throw new Error(data.error || 'Failed to add to watchlist');
                 }
-                toast.success(`${symbol} added to watchlist`);
+                toast.success(`${symbol} added to watchlist`, {
+                    icon: '⭐',
+                    duration: 2000,
+                });
             } else {
                 const devEmail = process.env.NEXT_PUBLIC_DEV_EMAIL as string | undefined;
                 const headers: Record<string, string> = {};
@@ -53,7 +63,10 @@ const WatchlistButton = ({
                     const data = await res.json().catch(() => ({ error: 'Failed to remove from watchlist' }));
                     throw new Error(data.error || 'Failed to remove from watchlist');
                 }
-                toast.success(`${symbol} removed from watchlist`);
+                toast.success(`${symbol} removed from watchlist`, {
+                    icon: '🗑️',
+                    duration: 2000,
+                });
             }
         } catch (err) {
             console.error('watchlist toggle error', err);
@@ -70,7 +83,7 @@ const WatchlistButton = ({
             <button
                 title={added ? `Remove ${symbol} from watchlist` : `Add ${symbol} to watchlist`}
                 aria-label={added ? `Remove ${symbol} from watchlist` : `Add ${symbol} to watchlist`}
-                className={`watchlist-icon-btn ${added ? "watchlist-icon-added" : ""} focus:outline-none inline-flex items-center justify-center p-1 rounded`}
+                className={`watchlist-icon-btn ${added ? "watchlist-icon-added" : ""} focus:outline-none inline-flex items-center justify-center p-1 rounded transition-all duration-200 hover:scale-110 ${isAnimating ? 'scale-125' : ''}`}
                 onClick={handleClick}
             >
                 <svg
@@ -79,7 +92,7 @@ const WatchlistButton = ({
                     fill={added ? "#F59E0B" : "none"}
                     stroke={added ? "#DD6B20" : "#9CA3AF"}
                     strokeWidth="1.5"
-                    className="watchlist-star h-4 w-4"
+                    className={`watchlist-star h-4 w-4 transition-all duration-300 ${isAnimating ? 'rotate-180' : ''}`}
                 >
                     <path
                         strokeLinecap="round"
@@ -92,7 +105,7 @@ const WatchlistButton = ({
     }
 
     return (
-        <button className={`watchlist-btn ${added ? "watchlist-remove" : ""}`} onClick={handleClick}>
+        <button className={`watchlist-btn ${added ? "watchlist-remove" : ""} transition-all duration-200 hover:scale-105`} onClick={handleClick}>
             {showTrashIcon && added ? (
                 <svg
                     xmlns="http://www.w3.org/2000/svg"

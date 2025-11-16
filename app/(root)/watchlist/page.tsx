@@ -2,12 +2,12 @@ import WatchlistTable from "@/components/WatchlistTable";
 
 const WatchlistPage = () => {
     return (
-        <div className="flex flex-col gap-6">
-            <div>
+        <div className="flex flex-col gap-6 animate-fade-in">
+            <div className="animate-slide-up">
                 <h1 className="text-3xl font-bold text-gray-100">Watchlist</h1>
-                <p className="text-gray-400 mt-2">Track your favorite stocks</p>
+                <p className="text-gray-400 mt-2">Track your favorite stocks and their performance</p>
             </div>
-            <div className="rounded-lg border border-gray-800 bg-gray-900/40 p-2 sm:p-4">
+            <div className="rounded-lg border border-gray-800 bg-gray-900/40 p-2 sm:p-4 animate-slide-up animation-delay-100">
                 <WatchlistTable />
             </div>
         </div>
