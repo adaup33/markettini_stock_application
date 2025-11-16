@@ -278,14 +278,6 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {dataToRender.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={8} className="text-center py-6 text-sm text-gray-400">
-                                Your watchlist is empty — add stocks from Search or a Stock page.
-                            </TableCell>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
                         {dataToRender.length === 0 ? (
                             <TableRow className="hover:bg-transparent">
                                 <TableCell colSpan={9} className="text-center py-8 text-sm text-gray-400">
@@ -396,7 +388,6 @@ const WatchlistTable = ({ email }: WatchlistTableProps) => {
                         )}
                     </TableBody>
                 </Table>
-            </div>
 
             {/* Mobile View */}
             <div className="md:hidden space-y-3">
