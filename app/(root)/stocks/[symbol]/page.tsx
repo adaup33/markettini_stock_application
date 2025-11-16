@@ -32,6 +32,16 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 w-full">
                 {/* Left column */}
                 <div className="flex flex-col gap-6">
+                    <div className="flex items-center justify-between animate-slide-in-left mb-2">
+                        <div className="flex-1"></div>
+                        <WatchlistButton 
+                            symbol={symbol.toUpperCase()} 
+                            company={symbol.toUpperCase()} 
+                            isInWatchlist={isInWatchlist}
+                            showTrashIcon={false}
+                        />
+                    </div>
+                    
                     <div className="animate-slide-in-left">
                         <TradingViewWidget
                             scriptUrl={`${scriptUrl}symbol-info.js`}
@@ -61,15 +71,6 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
 
                 {/* Right column */}
                 <div className="flex flex-col gap-6">
-                    <div className="flex items-center justify-between animate-slide-in-right">
-                        <WatchlistButton 
-                            symbol={symbol.toUpperCase()} 
-                            company={symbol.toUpperCase()} 
-                            isInWatchlist={isInWatchlist}
-                            showTrashIcon={false}
-                        />
-                    </div>
-
                     <div className="animate-slide-in-right animation-delay-100">
                         <TradingViewWidget
                             scriptUrl={`${scriptUrl}technical-analysis.js`}

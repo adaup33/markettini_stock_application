@@ -45,11 +45,12 @@ export const metadata: Metadata = {
         title: "Marketinni - Real-Time Stock Market Tracking",
         description: "Track real-time stock prices, get personalized alerts and explore detailed company insights.",
     },
-    viewport: {
-        width: "device-width",
-        initialScale: 1,
-        maximumScale: 5,
-    },
+};
+
+export const viewport = {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 5,
 };
 
 export default function RootLayout({
