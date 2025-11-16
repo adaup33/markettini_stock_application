@@ -168,9 +168,10 @@ export async function GET(req: Request) {
         });
 
         return NextResponse.json({ success: true, data: enriched, meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } });
-    } catch (err) {
+    } catch (err: any) {
         console.error('watchlist GET error', err);
-        return NextResponse.json({ success: false, error: 'failed' }, { status: 500 });
+        const errorMessage = err?.message || 'Failed to fetch watchlist';
+        return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
     }
 }
 
@@ -245,10 +246,19 @@ export async function POST(req: Request) {
         }
 
         const status = result?.success ? 200 : 400;
-        return NextResponse.json({ ...result, meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } }, { status });
-    } catch (err) {
+        const errorMessage = result?.error || (result?.success ? undefined : 'Failed to add to watchlist');
+        return NextResponse.json(
+            { 
+                success: result?.success, 
+                error: errorMessage,
+                meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } 
+            }, 
+            { status }
+        );
+    } catch (err: any) {
         console.error('watchlist POST error', err);
-        return NextResponse.json({ success: false, error: 'failed' }, { status: 500 });
+        const errorMessage = err?.message || 'Failed to add to watchlist';
+        return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
     }
 }
 
@@ -307,9 +317,18 @@ export async function DELETE(req: Request) {
         }
 
         const status = result?.success ? 200 : 400;
-        return NextResponse.json({ ...result, meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } }, { status });
-    } catch (err) {
+        const errorMessage = result?.error || (result?.success ? undefined : 'Failed to remove from watchlist');
+        return NextResponse.json(
+            { 
+                success: result?.success, 
+                error: errorMessage,
+                meta: { email: email ?? null, emailSource: emailSource ?? 'none', emailDetail: emailDetail ?? null, nodemailerAllowed: nodemailerFallbackAllowed(), nodemailerEnvSet: !!process.env.NODEMAILER_EMAIL } 
+            }, 
+            { status }
+        );
+    } catch (err: any) {
         console.error('watchlist DELETE error', err);
-        return NextResponse.json({ success: false, error: 'failed' }, { status: 500 });
+        const errorMessage = err?.message || 'Failed to remove from watchlist';
+        return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
     }
 }

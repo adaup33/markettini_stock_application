@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, Bell, Check, Pencil, Trash2, ToggleLeft, ToggleRight, X } from "lucide-react";
+import { toast } from "sonner";
 
 // Shape returned by our /api/alerts endpoints
 type AlertItemDto = {
@@ -61,13 +62,18 @@ export default function AlertsPage() {
     setError(null);
     try {
       const res = await fetch(`/api/alerts`);
-      if (!res.ok) throw new Error("Failed to load alerts");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Failed to load alerts' }));
+        throw new Error(data.error || 'Failed to load alerts');
+      }
       const data = await res.json();
       const list = (data?.data ?? []) as AlertItemDto[];
       setItems(Array.isArray(list) ? list : []);
     } catch (e: any) {
       console.error(e);
-      setError(e?.message || "Failed to load alerts");
+      const errorMessage = e?.message || "Failed to load alerts";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -80,7 +86,9 @@ export default function AlertsPage() {
   async function createAlert() {
     const thr = Number((threshold || '').trim());
     if (!symbol.trim() || !isFinite(thr)) {
-      setError("Please provide a symbol and a valid threshold number.");
+      const errorMessage = "Please provide a symbol and a valid threshold number.";
+      setError(errorMessage);
+      toast.error(errorMessage);
       return;
     }
     setSaving(true);
@@ -93,7 +101,10 @@ export default function AlertsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Failed to create alert");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Failed to create alert' }));
+        throw new Error(data.error || 'Failed to create alert');
+      }
       // Optimistically append
       await load();
       // clear form
@@ -101,9 +112,12 @@ export default function AlertsPage() {
       setOperator('>');
       setThreshold("");
       setNote("");
+      toast.success(`Alert created for ${payload.symbol}`);
     } catch (e: any) {
       console.error(e);
-      setError(e?.message || "Failed to create alert");
+      const errorMessage = e?.message || "Failed to create alert";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -117,9 +131,15 @@ export default function AlertsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: !active }),
       });
-      if (!res.ok) throw new Error('Failed to toggle');
-    } catch (e) {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Failed to toggle alert' }));
+        throw new Error(data.error || 'Failed to toggle alert');
+      }
+      toast.success(active ? 'Alert disabled' : 'Alert enabled');
+    } catch (e: any) {
       console.error(e);
+      const errorMessage = e?.message || 'Failed to toggle alert';
+      toast.error(errorMessage);
       // revert on failure
       setItems((prev) => prev.map((x) => (x._id === id ? { ...x, active } : x)));
     }
@@ -142,7 +162,9 @@ export default function AlertsPage() {
   async function saveEdit(id: string) {
     const thr = Number((editThreshold || '').trim());
     if (!isFinite(thr)) {
-      setError("Please provide a valid threshold number.");
+      const errorMessage = "Please provide a valid threshold number.";
+      setError(errorMessage);
+      toast.error(errorMessage);
       return;
     }
     try {
@@ -151,13 +173,19 @@ export default function AlertsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ threshold: thr, operator: editOperator, note: editNote.trim() || undefined }),
       });
-      if (!res.ok) throw new Error('Failed to save');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Failed to save alert' }));
+        throw new Error(data.error || 'Failed to save alert');
+      }
       // Update local state
       setItems((prev) => prev.map((x) => (x._id === id ? { ...x, threshold: thr, operator: editOperator, note: editNote.trim() || undefined } : x)));
       cancelEdit();
+      toast.success('Alert updated successfully');
     } catch (e: any) {
       console.error(e);
-      setError(e?.message || 'Failed to save alert');
+      const errorMessage = e?.message || 'Failed to save alert';
+      setError(errorMessage);
+      toast.error(errorMessage);
     }
   }
 
@@ -166,9 +194,15 @@ export default function AlertsPage() {
     try {
       setItems((p) => p.filter((x) => x._id !== id));
       const res = await fetch(`/api/alerts/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete');
-    } catch (e) {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Failed to delete alert' }));
+        throw new Error(data.error || 'Failed to delete alert');
+      }
+      toast.success('Alert deleted successfully');
+    } catch (e: any) {
       console.error(e);
+      const errorMessage = e?.message || 'Failed to delete alert';
+      toast.error(errorMessage);
       // revert
       setItems(prev);
     }

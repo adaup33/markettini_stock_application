@@ -1,5 +1,6 @@
 "use client";
 import React, { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 const WatchlistButton = ({
                              symbol,
@@ -37,17 +38,28 @@ const WatchlistButton = ({
                     headers,
                     body: JSON.stringify(devEmail ? { symbol, company, email: devEmail } : { symbol, company }),
                 });
-                if (!res.ok) throw new Error('Failed to add');
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({ error: 'Failed to add to watchlist' }));
+                    throw new Error(data.error || 'Failed to add to watchlist');
+                }
+                toast.success(`${symbol} added to watchlist`);
             } else {
                 const devEmail = process.env.NEXT_PUBLIC_DEV_EMAIL as string | undefined;
                 const headers: Record<string, string> = {};
                 if (devEmail) headers['x-user-email'] = devEmail;
                 const url = `/api/watchlist?symbol=${encodeURIComponent(symbol)}${devEmail ? `&email=${encodeURIComponent(devEmail)}` : ''}`;
                 const res = await fetch(url, { method: 'DELETE', headers });
-                if (!res.ok) throw new Error('Failed to remove');
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({ error: 'Failed to remove from watchlist' }));
+                    throw new Error(data.error || 'Failed to remove from watchlist');
+                }
+                toast.success(`${symbol} removed from watchlist`);
             }
         } catch (err) {
             console.error('watchlist toggle error', err);
+            // Show error toast
+            const errorMessage = err instanceof Error ? err.message : 'Failed to update watchlist';
+            toast.error(errorMessage);
             // Revert optimistic update on failure
             setAdded(!next);
         }

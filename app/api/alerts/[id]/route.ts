@@ -76,10 +76,10 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
     if (!email && process.env.NODE_ENV !== 'production') { const dev = process.env.DEV_WATCHLIST_EMAIL || process.env.NEXT_PUBLIC_DEV_EMAIL; if (dev) { email = dev; emailSource = 'dev_fallback'; emailDetail = process.env.DEV_WATCHLIST_EMAIL ? 'DEV_WATCHLIST_EMAIL' : (process.env.NEXT_PUBLIC_DEV_EMAIL ? 'NEXT_PUBLIC_DEV_EMAIL' : undefined); } }
 
     const userId = await resolveUserIdByEmail(email);
-    if (!userId) return NextResponse.json({ success: false, error: 'user not found', meta: { email: email ?? null } }, { status: 400 });
+    if (!userId) return NextResponse.json({ success: false, error: 'User not found', meta: { email: email ?? null } }, { status: 400 });
 
     const id = ctx?.params?.id;
-    if (!id || !Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, error: 'invalid id' }, { status: 400 });
+    if (!id || !Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, error: 'Invalid alert ID' }, { status: 400 });
 
     const updates: any = {};
     const op = parseOperator(body?.operator);
@@ -92,7 +92,7 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
     if (Object.keys(updates).length === 0) return NextResponse.json({ success: true, data: null, meta: { email: email ?? null } });
 
     const updated = await Alert.findOneAndUpdate({ _id: id, userId }, { $set: updates }, { new: true }).lean();
-    if (!updated) return NextResponse.json({ success: false, error: 'not found' }, { status: 404 });
+    if (!updated) return NextResponse.json({ success: false, error: 'Alert not found' }, { status: 404 });
 
     try {
       const wsHost = process.env.WS_BROADCAST_URL ?? `http://localhost:${process.env.WS_PORT ?? 4001}/broadcast`;
@@ -100,9 +100,10 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
     } catch (e) { console.error('alerts PATCH broadcast failed', e); }
 
     return NextResponse.json({ success: true, data: updated, meta: { email: email ?? null, emailSource, emailDetail } });
-  } catch (err) {
+  } catch (err: any) {
     console.error('alerts:id PATCH error', err);
-    return NextResponse.json({ success: false, error: 'failed' }, { status: 500 });
+    const errorMessage = err?.message || 'Failed to update alert';
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
 
@@ -122,10 +123,10 @@ export async function DELETE(req: Request, ctx: { params: { id: string } }) {
     if (!email && process.env.NODE_ENV !== 'production') { const dev = process.env.DEV_WATCHLIST_EMAIL || process.env.NEXT_PUBLIC_DEV_EMAIL; if (dev) { email = dev; emailSource = 'dev_fallback'; emailDetail = process.env.DEV_WATCHLIST_EMAIL ? 'DEV_WATCHLIST_EMAIL' : (process.env.NEXT_PUBLIC_DEV_EMAIL ? 'NEXT_PUBLIC_DEV_EMAIL' : undefined); } }
 
     const userId = await resolveUserIdByEmail(email);
-    if (!userId) return NextResponse.json({ success: false, error: 'user not found', meta: { email: email ?? null } }, { status: 400 });
+    if (!userId) return NextResponse.json({ success: false, error: 'User not found', meta: { email: email ?? null } }, { status: 400 });
 
     const id = ctx?.params?.id;
-    if (!id || !Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, error: 'invalid id' }, { status: 400 });
+    if (!id || !Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, error: 'Invalid alert ID' }, { status: 400 });
 
     const res = await Alert.deleteOne({ _id: id, userId });
     const success = res?.deletedCount === 1;
@@ -137,9 +138,10 @@ export async function DELETE(req: Request, ctx: { params: { id: string } }) {
       }
     } catch (e) { console.error('alerts DELETE broadcast failed', e); }
 
-    return NextResponse.json({ success, meta: { email: email ?? null, emailSource, emailDetail } }, { status: success ? 200 : 404 });
-  } catch (err) {
+    return NextResponse.json({ success, error: success ? undefined : 'Alert not found', meta: { email: email ?? null, emailSource, emailDetail } }, { status: success ? 200 : 404 });
+  } catch (err: any) {
     console.error('alerts:id DELETE error', err);
-    return NextResponse.json({ success: false, error: 'failed' }, { status: 500 });
+    const errorMessage = err?.message || 'Failed to delete alert';
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
