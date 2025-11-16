@@ -10,6 +10,7 @@ import {
 } from "@/lib/constants";
 import { auth } from "@/lib/better-auth/auth";
 import { getWatchlistSymbolsByEmail } from "@/lib/actions/watchlist.actions";
+import { headers } from "next/headers";
 
 export default async function StockDetails({ params }: StockDetailsPageProps) {
     const { symbol } = await params;
@@ -18,7 +19,7 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
     // Check if symbol is in user's watchlist
     let isInWatchlist = false;
     try {
-        const session = await auth.api.getSession();
+        const session = await auth.api.getSession({ headers: await headers() });
         if (session?.user?.email) {
             const watchlistSymbols = await getWatchlistSymbolsByEmail(session.user.email);
             isInWatchlist = watchlistSymbols.includes(symbol.toUpperCase());
@@ -32,6 +33,16 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 w-full">
                 {/* Left column */}
                 <div className="flex flex-col gap-6">
+                    <div className="flex items-center justify-between animate-slide-in-left mb-2">
+                        <div className="flex-1"></div>
+                        <WatchlistButton 
+                            symbol={symbol.toUpperCase()} 
+                            company={symbol.toUpperCase()} 
+                            isInWatchlist={isInWatchlist}
+                            showTrashIcon={false}
+                        />
+                    </div>
+                    
                     <div className="animate-slide-in-left">
                         <TradingViewWidget
                             scriptUrl={`${scriptUrl}symbol-info.js`}
@@ -61,15 +72,6 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
 
                 {/* Right column */}
                 <div className="flex flex-col gap-6">
-                    <div className="flex items-center justify-between animate-slide-in-right">
-                        <WatchlistButton 
-                            symbol={symbol.toUpperCase()} 
-                            company={symbol.toUpperCase()} 
-                            isInWatchlist={isInWatchlist}
-                            showTrashIcon={false}
-                        />
-                    </div>
-
                     <div className="animate-slide-in-right animation-delay-100">
                         <TradingViewWidget
                             scriptUrl={`${scriptUrl}technical-analysis.js`}
