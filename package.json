@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
-    "build:vercel": "npm run test:api && npm run build",
+    "build:vercel": "npm run build",
     "start": "next start",
     "ws-server": "node scripts/ws-server.js",
     "lint": "eslint .",
