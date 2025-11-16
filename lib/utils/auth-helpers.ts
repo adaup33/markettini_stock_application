@@ -1,8 +1,9 @@
-import { auth } from '@/lib/better-auth/auth';
+import { getAuth } from '@/lib/better-auth/auth';
 import { connectToDb } from '@/database/mongoose';
 
 export async function deriveEmailFromAuth(req: Request): Promise<string | undefined> {
   try {
+    const auth = await getAuth().catch(() => null);
     if (!auth) return undefined;
     if (typeof (auth as any).handler === 'function') {
       const maybe = await (auth as any).handler(req);
