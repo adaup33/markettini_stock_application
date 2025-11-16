@@ -23,13 +23,19 @@ import { getWatchlistByEmail, addSymbolToWatchlist, removeSymbolFromWatchlist } 
 import { getQuotes } from '@/lib/actions/finnhub.actions';
 
 describe('Watchlist API Routes', () => {
+  const originalEnv = process.env;
+
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset environment variables
+    process.env = { ...originalEnv };
     delete process.env.NODEMAILER_EMAIL;
     delete process.env.DEV_WATCHLIST_EMAIL;
     delete process.env.NEXT_PUBLIC_DEV_EMAIL;
-    delete process.env.NODE_ENV;
+  });
+
+  afterAll(() => {
+    process.env = originalEnv;
   });
 
   describe('GET /api/watchlist', () => {
@@ -71,8 +77,7 @@ describe('Watchlist API Routes', () => {
     });
 
     it('should use NODEMAILER_EMAIL fallback in development', async () => {
-      process.env.NODE_ENV = 'development';
-      process.env.NODEMAILER_EMAIL = 'nodemailer@example.com';
+      process.env = { ...process.env, NODE_ENV: 'development', NODEMAILER_EMAIL: 'nodemailer@example.com' };
       (getWatchlistByEmail as jest.Mock).mockResolvedValue([]);
       (getQuotes as jest.Mock).mockResolvedValue({});
 
@@ -157,8 +162,7 @@ describe('Watchlist API Routes', () => {
     });
 
     it('should use dev fallback email in non-production environment', async () => {
-      process.env.NODE_ENV = 'development';
-      process.env.DEV_WATCHLIST_EMAIL = 'dev@example.com';
+      process.env = { ...process.env, NODE_ENV: 'development', DEV_WATCHLIST_EMAIL: 'dev@example.com' };
       (addSymbolToWatchlist as jest.Mock).mockResolvedValue({ success: true });
 
       const request = new NextRequest('http://localhost:3000/api/watchlist', {

@@ -24,13 +24,19 @@ import { connectToDb } from '@/database/mongoose';
 import { Alert } from '@/database/models/alert.model';
 
 describe('Alerts API Routes', () => {
+  const originalEnv = process.env;
+
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset environment variables
+    process.env = { ...originalEnv };
     delete process.env.NODEMAILER_EMAIL;
     delete process.env.DEV_WATCHLIST_EMAIL;
     delete process.env.NEXT_PUBLIC_DEV_EMAIL;
-    delete process.env.NODE_ENV;
+  });
+
+  afterAll(() => {
+    process.env = originalEnv;
   });
 
   describe('GET /api/alerts', () => {
@@ -209,7 +215,7 @@ describe('Alerts API Routes', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.error).toBe('user not found');
+      expect(data.error).toBe('User not found');
       expect(Alert.create).not.toHaveBeenCalled();
     });
 
@@ -238,7 +244,7 @@ describe('Alerts API Routes', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.error).toBe('Invalid payload');
+      expect(data.error).toBe('Invalid payload: symbol, operator, and threshold are required');
       expect(Alert.create).not.toHaveBeenCalled();
     });
 
@@ -267,7 +273,7 @@ describe('Alerts API Routes', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.error).toBe('Invalid payload');
+      expect(data.error).toBe('Invalid payload: symbol, operator, and threshold are required');
     });
 
     it('should return 400 when threshold is missing', async () => {
@@ -295,7 +301,7 @@ describe('Alerts API Routes', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.error).toBe('Invalid payload');
+      expect(data.error).toBe('Invalid payload: symbol, operator, and threshold are required');
     });
 
     it('should normalize symbol to uppercase', async () => {
@@ -341,8 +347,7 @@ describe('Alerts API Routes', () => {
     });
 
     it('should use dev fallback email in non-production environment', async () => {
-      process.env.NODE_ENV = 'development';
-      process.env.DEV_WATCHLIST_EMAIL = 'dev@example.com';
+      process.env = { ...process.env, NODE_ENV: 'development', DEV_WATCHLIST_EMAIL: 'dev@example.com' };
       
       const mockUser = { id: 'user123', email: 'dev@example.com' };
       const mockCreatedAlert = {

@@ -63,10 +63,45 @@ jobs:
           echo "Waiting for MongoDB to be ready..."
           sleep 15
 
+      - name: Run API Tests
+        env:
+          MONGODB_URI: mongodb://localhost:27017/test
+          BETTER_AUTH_SECRET: test-secret-for-ci
+          BETTER_AUTH_URL: http://localhost:3000
+          NODE_ENV: test
+        run: npm test -- --coverage --json --outputFile=test-results.json
+
+      - name: Generate Test Report
+        if: always()
+        run: |
+          echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+          if [ -f test-results.json ]; then
+            echo "Tests completed. Generating summary..." >> $GITHUB_STEP_SUMMARY
+            node -e "
+              const results = require('./test-results.json');
+              console.log('### Summary');
+              console.log('- **Total Tests:** ' + results.numTotalTests);
+              console.log('- **Passed:** ✅ ' + results.numPassedTests);
+              console.log('- **Failed:** ❌ ' + results.numFailedTests);
+              console.log('- **Skipped:** ⏭️ ' + results.numPendingTests);
+              console.log('- **Duration:** ' + (results.testResults.reduce((acc, t) => acc + t.perfStats.runtime, 0) / 1000).toFixed(2) + 's');
+            " >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Test results file not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            test-results.json
+            coverage/
+
       - name: DB smoke test
         env:
           MONGODB_URI: mongodb+srv://adaup33_db_user:P6WqJE2vOhSTYNf1@cluster0.ucpze0c.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}  # Add this
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           BETTER_AUTH_URL: http://localhost:3000
-
         run: npm run test:db

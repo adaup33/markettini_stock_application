@@ -5,10 +5,12 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
+    "build:vercel": "npm run test:api && npm run build",
     "start": "next start",
     "ws-server": "node scripts/ws-server.js",
     "lint": "eslint .",
     "test": "jest",
+    "test:api": "jest __tests__/app/api --passWithNoTests",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:db": "node scripts/test-db.mjs",
