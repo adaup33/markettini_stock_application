@@ -220,6 +220,39 @@ describe('Auth Actions', () => {
       expect(result.error).toBe('An account with this email already exists. Please sign in instead.');
       expect(inngest.send).not.toHaveBeenCalled();
     });
+
+    it('should succeed even when Inngest event fails (non-blocking)', async () => {
+      const mockResponse = {
+        user: { id: 'user123', email: 'test@example.com', name: 'Test User' },
+      };
+
+      const mockAuth = {
+        api: {
+          signUpEmail: jest.fn().mockResolvedValue(mockResponse),
+        },
+      };
+
+      (getAuth as jest.Mock).mockResolvedValue(mockAuth);
+      // Simulate Inngest send failure
+      (inngest.send as jest.Mock).mockRejectedValue(new Error('Inngest service unavailable'));
+
+      const formData: SignUpFormData = {
+        email: 'test@example.com',
+        password: 'password123',
+        fullName: 'Test User',
+        country: 'USA',
+        investmentGoals: 'Growth',
+        riskTolerance: 'Medium',
+        preferredIndustry: 'Technology',
+      };
+
+      const result = await signUpWithEmail(formData);
+
+      // Sign up should still succeed even though Inngest failed
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(mockResponse);
+      expect(inngest.send).toHaveBeenCalled();
+    });
   });
 
   describe('signInWithEmail', () => {

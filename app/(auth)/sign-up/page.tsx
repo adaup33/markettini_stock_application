@@ -69,6 +69,9 @@ const SignUp = () => {
             // Success! User is created and signed in
             toast.success('Welcome! Redirecting to dashboard...');
             
+            // Small delay to ensure session cookie is fully set before redirect
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
             // Refresh router to ensure server components see the new session
             router.refresh();
             router.push('/');
