@@ -5,10 +5,10 @@ import {
     CANDLE_CHART_WIDGET_CONFIG,
     BASELINE_WIDGET_CONFIG,
     TECHNICAL_ANALYSIS_WIDGET_CONFIG,
-    COMPANY_PROFILE_WIDGET_CONFIG,
+    SYMBOL_OVERVIEW_WIDGET_CONFIG,
     COMPANY_FINANCIALS_WIDGET_CONFIG,
 } from "@/lib/constants";
-import { auth } from "@/lib/better-auth/auth";
+import { getAuth } from "@/lib/better-auth/auth";
 import { getWatchlistSymbolsByEmail } from "@/lib/actions/watchlist.actions";
 import { headers } from "next/headers";
 
@@ -19,6 +19,7 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
     // Check if symbol is in user's watchlist
     let isInWatchlist = false;
     try {
+        const auth = await getAuth();
         const session = await auth.api.getSession({ headers: await headers() });
         if (session?.user?.email) {
             const watchlistSymbols = await getWatchlistSymbolsByEmail(session.user.email);
@@ -82,8 +83,8 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
 
                     <div className="animate-slide-in-right animation-delay-100">
                         <TradingViewWidget
-                            scriptUrl={`${scriptUrl}company-profile.js`}
-                            config={COMPANY_PROFILE_WIDGET_CONFIG(symbol)}
+                            scriptUrl={`${scriptUrl}symbol-overview.js`}
+                            config={SYMBOL_OVERVIEW_WIDGET_CONFIG(symbol)}
                             height={440}
                         />
                     </div>

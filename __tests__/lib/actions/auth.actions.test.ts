@@ -5,13 +5,7 @@ import { signUpWithEmail, signInWithEmail, signOut } from '@/lib/actions/auth.ac
 
 // Mock the auth module
 jest.mock('@/lib/better-auth/auth', () => ({
-  auth: {
-    api: {
-      signUpEmail: jest.fn(),
-      signInEmail: jest.fn(),
-      signOut: jest.fn(),
-    },
-  },
+  getAuth: jest.fn(),
 }));
 
 // Mock the inngest client
@@ -26,7 +20,7 @@ jest.mock('next/headers', () => ({
   headers: jest.fn().mockResolvedValue({}),
 }));
 
-import { auth } from '@/lib/better-auth/auth';
+import { getAuth } from '@/lib/better-auth/auth';
 import { inngest } from '@/lib/inngest/client';
 
 describe('Auth Actions', () => {
@@ -40,7 +34,13 @@ describe('Auth Actions', () => {
         user: { id: 'user123', email: 'test@example.com', name: 'Test User' },
       };
 
-      (auth.api.signUpEmail as unknown as jest.Mock).mockResolvedValue(mockResponse);
+      const mockAuth = {
+        api: {
+          signUpEmail: jest.fn().mockResolvedValue(mockResponse),
+        },
+      };
+
+      (getAuth as jest.Mock).mockResolvedValue(mockAuth);
       (inngest.send as jest.Mock).mockResolvedValue({ ids: ['event123'] });
 
       const formData: SignUpFormData = {
@@ -57,7 +57,7 @@ describe('Auth Actions', () => {
 
       expect(result.success).toBe(true);
       expect(result.data).toEqual(mockResponse);
-      expect(auth.api.signUpEmail).toHaveBeenCalledWith({
+      expect(mockAuth.api.signUpEmail).toHaveBeenCalledWith({
         body: {
           email: 'test@example.com',
           password: 'password123',
@@ -78,7 +78,13 @@ describe('Auth Actions', () => {
     });
 
     it('should handle sign up failure', async () => {
-      (auth.api.signUpEmail as unknown as jest.Mock).mockRejectedValue(new Error('Sign up failed'));
+      const mockAuth = {
+        api: {
+          signUpEmail: jest.fn().mockRejectedValue(new Error('Sign up failed')),
+        },
+      };
+
+      (getAuth as jest.Mock).mockResolvedValue(mockAuth);
 
       const formData: SignUpFormData = {
         email: 'test@example.com',
@@ -98,7 +104,13 @@ describe('Auth Actions', () => {
     });
 
     it('should not send inngest event if sign up response is null', async () => {
-      (auth.api.signUpEmail as unknown as jest.Mock).mockResolvedValue(null);
+      const mockAuth = {
+        api: {
+          signUpEmail: jest.fn().mockResolvedValue(null),
+        },
+      };
+
+      (getAuth as jest.Mock).mockResolvedValue(mockAuth);
 
       const formData: SignUpFormData = {
         email: 'test@example.com',
@@ -124,7 +136,13 @@ describe('Auth Actions', () => {
         session: { id: 'session123' },
       };
 
-      (auth.api.signInEmail as unknown as jest.Mock).mockResolvedValue(mockResponse);
+      const mockAuth = {
+        api: {
+          signInEmail: jest.fn().mockResolvedValue(mockResponse),
+        },
+      };
+
+      (getAuth as jest.Mock).mockResolvedValue(mockAuth);
 
       const formData: SignInFormData = {
         email: 'test@example.com',
@@ -135,7 +153,7 @@ describe('Auth Actions', () => {
 
       expect(result.success).toBe(true);
       expect(result.data).toEqual(mockResponse);
-      expect(auth.api.signInEmail).toHaveBeenCalledWith({
+      expect(mockAuth.api.signInEmail).toHaveBeenCalledWith({
         body: {
           email: 'test@example.com',
           password: 'password123',
@@ -144,7 +162,13 @@ describe('Auth Actions', () => {
     });
 
     it('should handle sign in failure', async () => {
-      (auth.api.signInEmail as unknown as jest.Mock).mockRejectedValue(new Error('Invalid credentials'));
+      const mockAuth = {
+        api: {
+          signInEmail: jest.fn().mockRejectedValue(new Error('Invalid credentials')),
+        },
+      };
+
+      (getAuth as jest.Mock).mockResolvedValue(mockAuth);
 
       const formData: SignInFormData = {
         email: 'test@example.com',
@@ -158,7 +182,13 @@ describe('Auth Actions', () => {
     });
 
     it('should handle network errors during sign in', async () => {
-      (auth.api.signInEmail as unknown as jest.Mock).mockRejectedValue(new Error('Network error'));
+      const mockAuth = {
+        api: {
+          signInEmail: jest.fn().mockRejectedValue(new Error('Network error')),
+        },
+      };
+
+      (getAuth as jest.Mock).mockResolvedValue(mockAuth);
 
       const formData: SignInFormData = {
         email: 'test@example.com',
@@ -174,16 +204,28 @@ describe('Auth Actions', () => {
 
   describe('signOut', () => {
     it('should successfully sign out a user', async () => {
-      (auth.api.signOut as unknown as jest.Mock).mockResolvedValue(undefined);
+      const mockAuth = {
+        api: {
+          signOut: jest.fn().mockResolvedValue(undefined),
+        },
+      };
+
+      (getAuth as jest.Mock).mockResolvedValue(mockAuth);
 
       const result = await signOut();
 
       expect(result).toBeUndefined();
-      expect(auth.api.signOut).toHaveBeenCalled();
+      expect(mockAuth.api.signOut).toHaveBeenCalled();
     });
 
     it('should handle sign out failure', async () => {
-      (auth.api.signOut as unknown as jest.Mock).mockRejectedValue(new Error('Sign out failed'));
+      const mockAuth = {
+        api: {
+          signOut: jest.fn().mockRejectedValue(new Error('Sign out failed')),
+        },
+      };
+
+      (getAuth as jest.Mock).mockResolvedValue(mockAuth);
 
       const result = await signOut();
 
@@ -194,11 +236,17 @@ describe('Auth Actions', () => {
     });
 
     it('should pass headers to signOut API', async () => {
-      (auth.api.signOut as unknown as jest.Mock).mockResolvedValue(undefined);
+      const mockAuth = {
+        api: {
+          signOut: jest.fn().mockResolvedValue(undefined),
+        },
+      };
+
+      (getAuth as jest.Mock).mockResolvedValue(mockAuth);
 
       await signOut();
 
-      expect(auth.api.signOut).toHaveBeenCalledWith({
+      expect(mockAuth.api.signOut).toHaveBeenCalledWith({
         headers: {},
       });
     });
