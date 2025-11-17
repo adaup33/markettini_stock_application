@@ -7,10 +7,9 @@ import SelectField from "@/components/forms/SelectField";
 import {INVESTMENT_GOALS, PREFERRED_INDUSTRIES, RISK_TOLERANCE_OPTIONS} from "@/lib/constants";
 import {CountrySelectField} from "@/components/forms/CountrySelectField";
 import FooterLink from "@/components/forms/FooterLink";
-import {signUpWithEmail} from "@/lib/actions/auth.actions";
+import {signUpWithEmail, signInWithEmail} from "@/lib/actions/auth.actions";
 import {useRouter} from "next/navigation";
 import {toast} from "sonner";
-import {authClient} from "@/lib/better-auth/client";
 
 const SignUp = () => {
     const router = useRouter()
@@ -51,19 +50,19 @@ const SignUp = () => {
                 description: 'Signing you in...'
             });
 
-            // Step 2: Sign in using client-side Better Auth (with separate error handling)
+            // Step 2: Sign in using server-side action for better reliability
             try {
-                const signInResult = await authClient.signIn.email({
+                const signInResult = await signInWithEmail({
                     email: data.email,
                     password: data.password,
                 });
                 console.log('Sign in result:', signInResult);
 
-                // Check for errors in various formats that Better Auth might return
-                if (signInResult?.error || !signInResult?.data) {
+                // Check if sign-in was successful
+                if (!signInResult.success) {
                     // User was created but sign-in failed - redirect to sign-in page
                     toast.warning('Please sign in with your new account', {
-                        description: 'Account created but auto sign-in failed'
+                        description: signInResult.error || 'Account created but auto sign-in failed'
                     });
                     router.push('/sign-in');
                     return;
@@ -72,28 +71,12 @@ const SignUp = () => {
                 // Success! User is created and signed in
                 toast.success('Welcome! Redirecting to dashboard...');
                 
-                // Poll for session to ensure it's fully set before redirecting
-                // This prevents race condition where server doesn't see session yet
-                let sessionReady = false;
-                const maxAttempts = 10; // Max 5 seconds (10 * 500ms)
+                // Small delay to ensure session is set before redirecting
+                await new Promise(resolve => setTimeout(resolve, 500));
                 
-                for (let attempt = 0; attempt < maxAttempts; attempt++) {
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    
-                    // Check if session cookie is set
-                    const cookies = document.cookie;
-                    if (cookies.includes('better-auth.session_token')) {
-                        sessionReady = true;
-                        break;
-                    }
-                }
-                
-                if (!sessionReady) {
-                    console.warn('Session cookie not detected after sign-in');
-                }
-                
-                // Force a hard navigation to ensure fresh server-side session check
-                window.location.href = '/';
+                // Refresh and redirect to dashboard
+                router.refresh();
+                router.push('/');
             } catch (signInError) {
                 // Sign-in threw an exception - account was created but auto sign-in failed
                 console.error('Auto sign-in error after account creation:', signInError);
