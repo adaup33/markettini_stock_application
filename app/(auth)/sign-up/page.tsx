@@ -7,10 +7,9 @@ import SelectField from "@/components/forms/SelectField";
 import {INVESTMENT_GOALS, PREFERRED_INDUSTRIES, RISK_TOLERANCE_OPTIONS} from "@/lib/constants";
 import {CountrySelectField} from "@/components/forms/CountrySelectField";
 import FooterLink from "@/components/forms/FooterLink";
-import {signUpWithEmail} from "@/lib/actions/auth.actions";
+import {signUpWithEmail, signInWithEmail} from "@/lib/actions/auth.actions";
 import {useRouter} from "next/navigation";
 import {toast} from "sonner";
-import {authClient} from "@/lib/better-auth/client";
 
 const SignUp = () => {
     const router = useRouter()
@@ -45,17 +44,17 @@ const SignUp = () => {
                 return;
             }
 
-            // Step 2: Sign in from client side to create session cookie
+            // Step 2: Sign in using server action to create session cookie
             toast.success('Account created successfully', {
                 description: 'Signing you in...'
             });
 
-            const signInResult = await authClient.signIn.email({
+            const signInResult = await signInWithEmail({
                 email: data.email,
                 password: data.password,
             });
 
-            if (signInResult.error) {
+            if (!signInResult.success) {
                 // User was created but sign-in failed - redirect to sign-in page
                 toast.warning('Please sign in with your new account', {
                     description: 'Account created but auto sign-in failed'
