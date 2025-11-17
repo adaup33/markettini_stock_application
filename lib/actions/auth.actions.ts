@@ -14,13 +14,42 @@ export const signUpWithEmail = async ({ email, password, fullName, country, inve
             headers: await headers()
         })
 
-        // Send welcome email event
-        if(response) {
-            await inngest.send({
-                name: 'app/user.created',
-                data: { email, name: fullName, country, investmentGoals, riskTolerance, preferredIndustry }
-            })
+        // Check if Better Auth returned an error (it may return { error: {...} } instead of throwing)
+        if (response && typeof response === 'object' && 'error' in response) {
+            const error = response.error as { message?: string };
+            const errorMessage = error?.message || 'Sign up failed';
+            
+            // Check if this is a "user already exists" error
+            if (errorMessage.toLowerCase().includes('user') && 
+                (errorMessage.toLowerCase().includes('exists') || errorMessage.toLowerCase().includes('already'))) {
+                return { 
+                    success: false, 
+                    error: 'An account with this email already exists. Please sign in instead.' 
+                }
+            }
+            
+            // Check for email-related errors
+            if (errorMessage.toLowerCase().includes('email')) {
+                return {
+                    success: false,
+                    error: errorMessage
+                }
+            }
+            
+            // Generic error
+            return { 
+                success: false, 
+                error: errorMessage || 'Failed to create account. Please try again.' 
+            }
         }
+
+        // Send welcome email event
+        // Note: response may be null/undefined when autoSignIn is disabled, but that's OK
+        // If signup succeeded without error, we should send the event
+        await inngest.send({
+            name: 'app/user.created',
+            data: { email, name: fullName, country, investmentGoals, riskTolerance, preferredIndustry }
+        })
 
         return { success: true, data: response }
     } catch (e) {

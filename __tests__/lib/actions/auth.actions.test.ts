@@ -156,7 +156,7 @@ describe('Auth Actions', () => {
       expect(inngest.send).not.toHaveBeenCalled();
     });
 
-    it('should not send inngest event if sign up response is null', async () => {
+    it('should send inngest event even if sign up response is null (autoSignIn disabled)', async () => {
       const mockAuth = {
         api: {
           signUpEmail: jest.fn().mockResolvedValue(null),
@@ -164,6 +164,7 @@ describe('Auth Actions', () => {
       };
 
       (getAuth as jest.Mock).mockResolvedValue(mockAuth);
+      (inngest.send as jest.Mock).mockResolvedValue({ ids: ['event123'] });
 
       const formData: SignUpFormData = {
         email: 'test@example.com',
@@ -178,6 +179,45 @@ describe('Auth Actions', () => {
       const result = await signUpWithEmail(formData);
 
       expect(result.success).toBe(true);
+      // Event should be sent even when response is null (autoSignIn disabled)
+      expect(inngest.send).toHaveBeenCalledWith({
+        name: 'app/user.created',
+        data: {
+          email: 'test@example.com',
+          name: 'Test User',
+          country: 'USA',
+          investmentGoals: 'Growth',
+          riskTolerance: 'Medium',
+          preferredIndustry: 'Technology',
+        },
+      });
+    });
+
+    it('should handle error response from Better Auth (error object instead of exception)', async () => {
+      const mockAuth = {
+        api: {
+          signUpEmail: jest.fn().mockResolvedValue({
+            error: { message: 'User already exists' }
+          }),
+        },
+      };
+
+      (getAuth as jest.Mock).mockResolvedValue(mockAuth);
+
+      const formData: SignUpFormData = {
+        email: 'existing@example.com',
+        password: 'password123',
+        fullName: 'Existing User',
+        country: 'USA',
+        investmentGoals: 'Growth',
+        riskTolerance: 'Medium',
+        preferredIndustry: 'Technology',
+      };
+
+      const result = await signUpWithEmail(formData);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('An account with this email already exists. Please sign in instead.');
       expect(inngest.send).not.toHaveBeenCalled();
     });
   });
