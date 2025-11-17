@@ -39,61 +39,71 @@ const SignUp = () => {
             console.log('Sign up result:', result);
 
             if (!result.success) {
-                // User creation failed
+                // User creation failed - show error and stop
                 toast.error('Sign up failed', {
                     description: result.error || 'Failed to create account'
                 });
                 return;
             }
 
-            // Step 2: Sign in using client-side Better Auth to create session cookie
+            // Account created successfully - now handle sign-in separately
             toast.success('Account created successfully', {
                 description: 'Signing you in...'
             });
 
-            const signInResult = await authClient.signIn.email({
-                email: data.email,
-                password: data.password,
-            });
-            console.log('Sign in result:', signInResult);
+            // Step 2: Sign in using client-side Better Auth (with separate error handling)
+            try {
+                const signInResult = await authClient.signIn.email({
+                    email: data.email,
+                    password: data.password,
+                });
+                console.log('Sign in result:', signInResult);
 
-            // Check for errors in various formats that Better Auth might return
-            if (signInResult?.error || !signInResult?.data) {
-                // User was created but sign-in failed - redirect to sign-in page
+                // Check for errors in various formats that Better Auth might return
+                if (signInResult?.error || !signInResult?.data) {
+                    // User was created but sign-in failed - redirect to sign-in page
+                    toast.warning('Please sign in with your new account', {
+                        description: 'Account created but auto sign-in failed'
+                    });
+                    router.push('/sign-in');
+                    return;
+                }
+
+                // Success! User is created and signed in
+                toast.success('Welcome! Redirecting to dashboard...');
+                
+                // Poll for session to ensure it's fully set before redirecting
+                // This prevents race condition where server doesn't see session yet
+                let sessionReady = false;
+                const maxAttempts = 10; // Max 5 seconds (10 * 500ms)
+                
+                for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // Check if session cookie is set
+                    const cookies = document.cookie;
+                    if (cookies.includes('better-auth.session_token')) {
+                        sessionReady = true;
+                        break;
+                    }
+                }
+                
+                if (!sessionReady) {
+                    console.warn('Session cookie not detected after sign-in');
+                }
+                
+                // Force a hard navigation to ensure fresh server-side session check
+                window.location.href = '/';
+            } catch (signInError) {
+                // Sign-in threw an exception - account was created but auto sign-in failed
+                console.error('Auto sign-in error after account creation:', signInError);
                 toast.warning('Please sign in with your new account', {
                     description: 'Account created but auto sign-in failed'
                 });
                 router.push('/sign-in');
-                return;
             }
-
-            // Success! User is created and signed in
-            toast.success('Welcome! Redirecting to dashboard...');
-            
-            // Poll for session to ensure it's fully set before redirecting
-            // This prevents race condition where server doesn't see session yet
-            let sessionReady = false;
-            const maxAttempts = 10; // Max 5 seconds (10 * 500ms)
-            
-            for (let attempt = 0; attempt < maxAttempts; attempt++) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                // Check if session cookie is set
-                const cookies = document.cookie;
-                if (cookies.includes('better-auth.session_token')) {
-                    sessionReady = true;
-                    break;
-                }
-            }
-            
-            if (!sessionReady) {
-                console.warn('Session cookie not detected after sign-in');
-            }
-            
-            // Force a hard navigation to ensure fresh server-side session check
-            window.location.href = '/';
         } catch (e) {
-            // Handle unexpected errors
+            // Handle unexpected errors during account creation
             console.error('Sign up error:', e);
             toast.error('Sign up failed', {
                 description: e instanceof Error ? e.message : 'An unexpected error occurred'
