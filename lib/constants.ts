@@ -243,13 +243,33 @@ export const TECHNICAL_ANALYSIS_WIDGET_CONFIG = (symbol: string) => ({
     largeChartUrl: '',
 });
 
-export const COMPANY_PROFILE_WIDGET_CONFIG = (symbol: string) => ({
-    symbol: symbol.toUpperCase(),
+export const SYMBOL_OVERVIEW_WIDGET_CONFIG = (symbol: string) => ({
+    symbols: [[symbol.toUpperCase()]],
+    chartOnly: false,
     colorTheme: 'dark',
-    isTransparent: 'true',
+    isTransparent: true,
     locale: 'en',
     width: '100%',
     height: 440,
+    showVolume: true,
+    showMA: false,
+    hideDateRanges: false,
+    hideMarketStatus: false,
+    hideSymbolLogo: false,
+    scalePosition: 'right',
+    scaleMode: 'Normal',
+    fontFamily: '-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif',
+    fontSize: '10',
+    noTimeScale: false,
+    valuesTracking: '1',
+    changeMode: 'price-and-percent',
+    chartType: 'area',
+    maLineColor: '#2962FF',
+    maLineWidth: 1,
+    maLength: 9,
+    lineWidth: 2,
+    lineType: 0,
+    dateRanges: ['1d|1', '1m|30', '3m|60', '12m|1D', '60m|1W', 'all|1M'],
 });
 
 export const COMPANY_FINANCIALS_WIDGET_CONFIG = (symbol: string) => ({

@@ -5,7 +5,7 @@ import {
     CANDLE_CHART_WIDGET_CONFIG,
     BASELINE_WIDGET_CONFIG,
     TECHNICAL_ANALYSIS_WIDGET_CONFIG,
-    COMPANY_PROFILE_WIDGET_CONFIG,
+    SYMBOL_OVERVIEW_WIDGET_CONFIG,
     COMPANY_FINANCIALS_WIDGET_CONFIG,
 } from "@/lib/constants";
 import { getAuth } from "@/lib/better-auth/auth";
@@ -83,8 +83,8 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
 
                     <div className="animate-slide-in-right animation-delay-100">
                         <TradingViewWidget
-                            scriptUrl={`${scriptUrl}company-profile.js`}
-                            config={COMPANY_PROFILE_WIDGET_CONFIG(symbol)}
+                            scriptUrl={`${scriptUrl}symbol-overview.js`}
+                            config={SYMBOL_OVERVIEW_WIDGET_CONFIG(symbol)}
                             height={440}
                         />
                     </div>
