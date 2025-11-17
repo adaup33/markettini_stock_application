@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import { updateWatchlistFields } from '@/lib/actions/watchlist.actions';
-import { auth } from '@/lib/better-auth/auth';
+import { getAuth } from '@/lib/better-auth/auth';
 
 function nodemailerFallbackAllowed(): boolean {
   return process.env.WATCHLIST_ALLOW_SMTP_EMAIL === '1' || process.env.NODE_ENV !== 'production';
@@ -10,6 +10,7 @@ function nodemailerFallbackAllowed(): boolean {
 
 async function deriveEmailFromAuth(req: Request): Promise<string | undefined> {
   try {
+    const auth = await getAuth();
     if (!auth) return undefined;
     const session = await auth.api.getSession({ headers: req.headers });
     const email = session?.user?.email;

@@ -36,5 +36,3 @@ export const getAuth = async () => {
 
     return authInstance;
 }
-
-export const auth = await getAuth();

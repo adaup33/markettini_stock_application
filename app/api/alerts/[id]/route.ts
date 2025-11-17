@@ -3,11 +3,12 @@ export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { connectToDb } from '@/database/mongoose';
 import { Alert } from '@/database/models/alert.model';
-import { auth } from '@/lib/better-auth/auth';
+import { getAuth } from '@/lib/better-auth/auth';
 import { Types } from 'mongoose';
 
 async function deriveEmailFromAuth(req: Request): Promise<string | undefined> {
   try {
+    const auth = await getAuth();
     if (!auth) return undefined;
     const session = await auth.api.getSession({ headers: req.headers });
     const email = session?.user?.email;

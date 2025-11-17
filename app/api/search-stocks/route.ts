@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { searchStocks } from '@/lib/actions/finnhub.actions';
 import { getWatchlistSymbolsByEmail } from '@/lib/actions/watchlist.actions';
-import { auth } from '@/lib/better-auth/auth';
+import { getAuth } from '@/lib/better-auth/auth';
 
 async function getUserEmail(req: Request): Promise<string | undefined> {
   try {
+    const auth = await getAuth();
     if (!auth) return undefined;
     const session = await auth.api.getSession({ headers: req.headers });
     return session?.user?.email || undefined;

@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import { addSymbolToWatchlist, removeSymbolFromWatchlist, getWatchlistByEmail } from '@/lib/actions/watchlist.actions';
-import { auth } from '@/lib/better-auth/auth';
+import { getAuth } from '@/lib/better-auth/auth';
 import { getQuotes } from '@/lib/actions/finnhub.actions';
 
 function formatNumber(n: number | null | undefined): string {
@@ -68,6 +68,7 @@ function parseMarketCapToBillions(v: unknown): number | null {
 
 async function deriveEmailFromAuth(req: Request): Promise<string | undefined> {
     try {
+        const auth = await getAuth();
         if (!auth) return undefined;
         const session = await auth.api.getSession({ headers: req.headers });
         const email = session?.user?.email;
