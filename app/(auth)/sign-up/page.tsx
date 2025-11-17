@@ -57,7 +57,8 @@ const SignUp = () => {
             });
             console.log('Sign in result:', signInResult);
 
-            if (signInResult.error) {
+            // Check for errors in various formats that Better Auth might return
+            if (signInResult?.error || !signInResult?.data) {
                 // User was created but sign-in failed - redirect to sign-in page
                 toast.warning('Please sign in with your new account', {
                     description: 'Account created but auto sign-in failed'
@@ -69,12 +70,28 @@ const SignUp = () => {
             // Success! User is created and signed in
             toast.success('Welcome! Redirecting to dashboard...');
             
-            // Small delay to ensure session cookie is fully set before redirect
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Poll for session to ensure it's fully set before redirecting
+            // This prevents race condition where server doesn't see session yet
+            let sessionReady = false;
+            const maxAttempts = 10; // Max 5 seconds (10 * 500ms)
             
-            // Refresh router to ensure server components see the new session
-            router.refresh();
-            router.push('/');
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Check if session cookie is set
+                const cookies = document.cookie;
+                if (cookies.includes('better-auth.session_token')) {
+                    sessionReady = true;
+                    break;
+                }
+            }
+            
+            if (!sessionReady) {
+                console.warn('Session cookie not detected after sign-in');
+            }
+            
+            // Force a hard navigation to ensure fresh server-side session check
+            window.location.href = '/';
         } catch (e) {
             // Handle unexpected errors
             console.error('Sign up error:', e);
