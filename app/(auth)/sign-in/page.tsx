@@ -29,6 +29,7 @@ const SignIn = () => {
 
             if (result.success) {
                 toast.success('Signed in successfully');  // ✅ Success feedback
+                router.refresh();
                 router.push('/');
             } else {
                 // ✅ Handle API validation errors
