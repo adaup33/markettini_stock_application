@@ -12,7 +12,7 @@ jest.mock('@/lib/actions/watchlist.actions', () => ({
 }));
 
 jest.mock('@/lib/better-auth/auth', () => ({
-  auth: null,
+  getAuth: jest.fn().mockResolvedValue(null),
 }));
 
 jest.mock('@/lib/actions/finnhub.actions', () => ({

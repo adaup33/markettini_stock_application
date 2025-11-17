@@ -17,7 +17,7 @@ jest.mock('@/database/models/alert.model', () => ({
 }));
 
 jest.mock('@/lib/better-auth/auth', () => ({
-  auth: null,
+  getAuth: jest.fn().mockResolvedValue(null),
 }));
 
 import { connectToDb } from '@/database/mongoose';

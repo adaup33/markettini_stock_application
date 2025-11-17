@@ -126,6 +126,9 @@ export async function POST(req: Request) {
   try {
     await connectToDb();
     
+    // Parse body once at the start
+    const body = await req.json().catch(() => ({} as any));
+    
     // Try to get user from session first
     const user = await getUserFromSession(req);
     let userId: string | null = user?.userId ?? null;
@@ -136,7 +139,6 @@ export async function POST(req: Request) {
     // Fallback to manual email resolution for testing/development
     if (!user) {
       const url = new URL(req.url);
-      const body = await req.json().catch(() => ({} as any));
       const bodyEmail = (body?.email as string | undefined) || undefined;
       const queryEmail = url.searchParams.get('email') || undefined;
       const headerEmail = req.headers.get('x-user-email') || req.headers.get('x-useremail') || undefined;
@@ -167,7 +169,6 @@ export async function POST(req: Request) {
 
     if (!userId) return NextResponse.json({ success: false, error: 'User not found', meta: { email: email ?? null } }, { status: 400 });
 
-    const body = await req.json().catch(() => ({} as any));
     const symbol = (body?.symbol as string | undefined)?.toUpperCase() || undefined;
     const operator = parseOperator(body?.operator);
     const threshold = parseNumber(body?.threshold);
