@@ -36,6 +36,7 @@ const SignUp = () => {
         try {
             // Step 1: Create user account via server action
             const result = await signUpWithEmail(data);
+            console.log('Sign up result:', result);
 
             if (!result.success) {
                 // User creation failed
@@ -45,7 +46,7 @@ const SignUp = () => {
                 return;
             }
 
-            // Step 2: Sign in from client side to create session cookie
+            // Step 2: Sign in using client-side Better Auth to create session cookie
             toast.success('Account created successfully', {
                 description: 'Signing you in...'
             });
@@ -54,6 +55,7 @@ const SignUp = () => {
                 email: data.email,
                 password: data.password,
             });
+            console.log('Sign in result:', signInResult);
 
             if (signInResult.error) {
                 // User was created but sign-in failed - redirect to sign-in page
@@ -66,6 +68,9 @@ const SignUp = () => {
 
             // Success! User is created and signed in
             toast.success('Welcome! Redirecting to dashboard...');
+            
+            // Refresh router to ensure server components see the new session
+            router.refresh();
             router.push('/');
         } catch (e) {
             // Handle unexpected errors
