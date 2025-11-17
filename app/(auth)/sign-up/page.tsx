@@ -10,6 +10,7 @@ import FooterLink from "@/components/forms/FooterLink";
 import {signUpWithEmail} from "@/lib/actions/auth.actions";
 import {useRouter} from "next/navigation";
 import {toast} from "sonner";
+import {authClient} from "@/lib/better-auth/client";
 
 const SignUp = () => {
     const router = useRouter()
@@ -33,22 +34,39 @@ const SignUp = () => {
 
     const onSubmit = async (data: SignUpFormData) => {
         try {
+            // Step 1: Create user account via server action
             const result = await signUpWithEmail(data);
 
-            if (result.success) {
-                toast.success('Sign up successful', {
-                    description: 'Logging you in...'
-                });
-                // Give a brief moment for the session cookie to be set
-                setTimeout(() => {
-                    router.push('/');
-                }, 500);
-            } else {
-                // Handle API validation errors
+            if (!result.success) {
+                // User creation failed
                 toast.error('Sign up failed', {
                     description: result.error || 'Failed to create account'
                 });
+                return;
             }
+
+            // Step 2: Sign in from client side to create session cookie
+            toast.success('Account created successfully', {
+                description: 'Signing you in...'
+            });
+
+            const signInResult = await authClient.signIn.email({
+                email: data.email,
+                password: data.password,
+            });
+
+            if (signInResult.error) {
+                // User was created but sign-in failed - redirect to sign-in page
+                toast.warning('Please sign in with your new account', {
+                    description: 'Account created but auto sign-in failed'
+                });
+                router.push('/sign-in');
+                return;
+            }
+
+            // Success! User is created and signed in
+            toast.success('Welcome! Redirecting to dashboard...');
+            router.push('/');
         } catch (e) {
             // Handle unexpected errors
             console.error('Sign up error:', e);

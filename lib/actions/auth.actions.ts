@@ -7,12 +7,14 @@ import {headers} from "next/headers";
 export const signUpWithEmail = async ({ email, password, fullName, country, investmentGoals, riskTolerance, preferredIndustry }: SignUpFormData) => {
     try {
         const auth = await getAuth();
-        // Pass headers to allow Better Auth to set cookies properly
+        // Create user without auto-sign-in (autoSignIn is disabled)
+        // We'll handle sign-in from the client side
         const response = await auth.api.signUpEmail({ 
             body: { email, password, name: fullName },
             headers: await headers()
         })
 
+        // Send welcome email event
         if(response) {
             await inngest.send({
                 name: 'app/user.created',
@@ -36,10 +38,18 @@ export const signUpWithEmail = async ({ email, password, fullName, country, inve
             }
         }
         
-        // Return a more descriptive error
+        // Check for email-related errors
+        if (errorMessage.toLowerCase().includes('email')) {
+            return {
+                success: false,
+                error: errorMessage
+            }
+        }
+        
+        // Generic error
         return { 
             success: false, 
-            error: errorMessage.includes('email') ? errorMessage : 'Failed to create account. Please try again.' 
+            error: 'Failed to create account. Please try again.' 
         }
     }
 }

@@ -29,7 +29,9 @@ export const getAuth = async () => {
             requireEmailVerification: false,
             minPasswordLength: 8,
             maxPasswordLength: 128,
-            autoSignIn: true,
+            // Disable autoSignIn for server-side calls since they can't set cookies properly
+            // We'll handle sign-in from the client side instead
+            autoSignIn: false,
         },
         plugins: [nextCookies()],
     });
