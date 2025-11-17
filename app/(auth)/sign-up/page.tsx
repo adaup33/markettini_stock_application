@@ -36,16 +36,21 @@ const SignUp = () => {
             const result = await signUpWithEmail(data);
 
             if (result.success) {
-                toast.success('Account created successfully');  // ✅ Success feedback
-                router.push('/');
+                toast.success('Sign up successful', {
+                    description: 'Logging you in...'
+                });
+                // Give a brief moment for the session cookie to be set
+                setTimeout(() => {
+                    router.push('/');
+                }, 500);
             } else {
-                // ✅ Handle API validation errors
+                // Handle API validation errors
                 toast.error('Sign up failed', {
                     description: result.error || 'Failed to create account'
                 });
             }
         } catch (e) {
-            // ✅ Handle unexpected errors
+            // Handle unexpected errors
             console.error('Sign up error:', e);
             toast.error('Sign up failed', {
                 description: e instanceof Error ? e.message : 'An unexpected error occurred'

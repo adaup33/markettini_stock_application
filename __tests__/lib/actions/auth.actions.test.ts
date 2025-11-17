@@ -63,6 +63,7 @@ describe('Auth Actions', () => {
           password: 'password123',
           name: 'Test User',
         },
+        headers: {},
       });
       expect(inngest.send).toHaveBeenCalledWith({
         name: 'app/user.created',
@@ -210,6 +211,7 @@ describe('Auth Actions', () => {
           email: 'test@example.com',
           password: 'password123',
         },
+        headers: {},
       });
     });
 
