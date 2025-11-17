@@ -70,8 +70,25 @@ const SignUp = () => {
             // Success! User is created and signed in
             toast.success('Welcome! Redirecting to dashboard...');
             
-            // Wait longer to ensure session cookie is fully propagated to server
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Poll for session to ensure it's fully set before redirecting
+            // This prevents race condition where server doesn't see session yet
+            let sessionReady = false;
+            const maxAttempts = 10; // Max 5 seconds (10 * 500ms)
+            
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Check if session cookie is set
+                const cookies = document.cookie;
+                if (cookies.includes('better-auth.session_token')) {
+                    sessionReady = true;
+                    break;
+                }
+            }
+            
+            if (!sessionReady) {
+                console.warn('Session cookie not detected after sign-in');
+            }
             
             // Force a hard navigation to ensure fresh server-side session check
             window.location.href = '/';
