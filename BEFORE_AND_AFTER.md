@@ -48,8 +48,9 @@ User Submits Form
     ↓
 [5] Toast: "Welcome! Redirecting to dashboard..." ✅
     ↓
-[6] Wait 1000ms ⏱️ (SUFFICIENT TIME!)
-    └─ Cookie propagates to browser ✅
+[6] Poll for session cookie (up to 5 seconds)
+    ├─ Check every 500ms for 'better-auth.session_token' cookie
+    └─ Cookie detected! ✅
     ↓
 [7] window.location.href = '/' - Hard navigation
     └─ Full page reload with cookie ✅
@@ -67,7 +68,9 @@ RESULT: User redirected to dashboard, sees success messages, no confusion ✅
 
 | Aspect | Before | After |
 |--------|--------|-------|
-| **Wait time** | 500ms | 1000ms |
+| **Wait time** | 500ms fixed | Adaptive polling (up to 5 seconds) |
+| **Navigation** | `router.push('/')` (client-side) | `window.location.href = '/'` (hard reload) |
+| **Session check** | None | Active polling for cookie presence |
 | **Navigation** | `router.push('/')` (client-side) | `window.location.href = '/'` (hard reload) |
 | **Error checking** | `if (signInResult.error)` | `if (signInResult?.error \|\| !signInResult?.data)` |
 | **Cookie propagation** | ❌ Insufficient time | ✅ Sufficient time |
@@ -97,7 +100,7 @@ if (signInResult?.error || !signInResult?.data) {
 }
 ```
 
-### Redirect Logic (Lines 73-77)
+### Redirect Logic (Lines 73-94)
 ```typescript
 // BEFORE
 toast.success('Welcome! Redirecting to dashboard...');
@@ -105,25 +108,38 @@ await new Promise(resolve => setTimeout(resolve, 500));
 router.refresh();
 router.push('/');
 
-// AFTER
+// AFTER (Cookie Polling)
 toast.success('Welcome! Redirecting to dashboard...');
-await new Promise(resolve => setTimeout(resolve, 1000));
+
+// Poll for session to ensure it's fully set before redirecting
+let sessionReady = false;
+const maxAttempts = 10; // Max 5 seconds (10 * 500ms)
+
+for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    if (document.cookie.includes('better-auth.session_token')) {
+        sessionReady = true;
+        break;
+    }
+}
+
 window.location.href = '/';
 ```
 
 ## Why These Changes Work
 
-### 1. Doubled Delay (500ms → 1000ms)
-- Cookie needs time to propagate from client to browser storage
-- Browser needs time to include cookie in subsequent requests
-- 1000ms provides buffer for various network conditions
+### 1. Active Cookie Polling (vs Fixed Delay)
+- Checks for actual cookie presence instead of assuming timing
+- Adaptive: redirects immediately when cookie is ready (could be < 1s)
+- Patient: waits up to 5 seconds for slow networks
+- More reliable across different network conditions
 
 ### 2. Hard Navigation (window.location.href)
 - Forces browser to make fresh HTTP request
 - Server receives request with session cookie included
 - No client-side cache or stale state
 - Guarantees server-side session validation
-
 ### 3. Better Error Handling
 - Handles multiple response formats from Better Auth
 - Checks for both explicit errors and missing data

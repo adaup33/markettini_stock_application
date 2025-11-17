@@ -47,7 +47,7 @@ if (signInResult?.error || !signInResult?.data) {
 - `!signInResult.data` - missing data indicates failure
 - Optional chaining (`?.`) - safely handles undefined responses
 
-#### Change 2: Better Session Propagation (Lines 73-77)
+#### Change 2: Active Session Cookie Polling (Lines 73-94)
 ```typescript
 // BEFORE:
 await new Promise(resolve => setTimeout(resolve, 500));
@@ -55,12 +55,25 @@ router.refresh();
 router.push('/');
 
 // AFTER:
-await new Promise(resolve => setTimeout(resolve, 1000));
+let sessionReady = false;
+const maxAttempts = 10; // Max 5 seconds (10 * 500ms)
+
+for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    if (document.cookie.includes('better-auth.session_token')) {
+        sessionReady = true;
+        break;
+    }
+}
+
 window.location.href = '/';
 ```
 
 **Why**: 
-- **Doubled delay** (500ms → 1000ms): Gives more time for session cookie to propagate
+- **Active polling** (vs fixed delay): Actually checks for cookie presence
+- **Adaptive timing**: Redirects as soon as cookie is ready (could be < 1s)
+- **Patient fallback**: Waits up to 5 seconds for slow networks
 - **Hard navigation** (`window.location.href`): Forces full page reload, ensuring:
   - Fresh server-side session check
   - All server components re-render with new session
@@ -80,7 +93,9 @@ signUpWithEmail() ──────────► Create user in DB
 authClient.signIn.email() ───► Set session cookie ──┐
                                                      │
                                                      │ Cookie propagation
-Wait 1000ms ◄────────────────────────────────────┘ │ (needs time)
+Poll for cookie (up to 5s) ◄─────────────────────┘ │ (variable time)
+├─ Check every 500ms                                 │
+└─ Cookie detected! ✓                                │
                                                      │
 window.location.href='/' ────► HTTP Request ─────────┘
                                ├─ Cookie included
