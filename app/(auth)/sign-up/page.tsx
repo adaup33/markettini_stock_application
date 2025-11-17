@@ -57,7 +57,8 @@ const SignUp = () => {
             });
             console.log('Sign in result:', signInResult);
 
-            if (signInResult.error) {
+            // Check for errors in various formats that Better Auth might return
+            if (signInResult?.error || !signInResult?.data) {
                 // User was created but sign-in failed - redirect to sign-in page
                 toast.warning('Please sign in with your new account', {
                     description: 'Account created but auto sign-in failed'
@@ -69,12 +70,11 @@ const SignUp = () => {
             // Success! User is created and signed in
             toast.success('Welcome! Redirecting to dashboard...');
             
-            // Small delay to ensure session cookie is fully set before redirect
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Wait longer to ensure session cookie is fully propagated to server
+            await new Promise(resolve => setTimeout(resolve, 1000));
             
-            // Refresh router to ensure server components see the new session
-            router.refresh();
-            router.push('/');
+            // Force a hard navigation to ensure fresh server-side session check
+            window.location.href = '/';
         } catch (e) {
             // Handle unexpected errors
             console.error('Sign up error:', e);
