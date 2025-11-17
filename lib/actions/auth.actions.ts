@@ -18,8 +18,20 @@ export const signUpWithEmail = async ({ email, password, fullName, country, inve
 
         return { success: true, data: response }
     } catch (e) {
-        console.log('Sign up failed', e)
-        return { success: false, error: 'Sign up failed' }
+        console.error('Sign up failed', e)
+        
+        // Provide more specific error messages
+        if (e instanceof Error) {
+            const errorMessage = e.message.toLowerCase();
+            if (errorMessage.includes('email')) {
+                return { success: false, error: 'This email is already registered. Please use a different email or sign in.' }
+            }
+            if (errorMessage.includes('password')) {
+                return { success: false, error: 'Password does not meet requirements. Please use at least 8 characters.' }
+            }
+        }
+        
+        return { success: false, error: 'Sign up failed. Please try again.' }
     }
 }
 
@@ -30,8 +42,17 @@ export const signInWithEmail = async ({ email, password }: SignInFormData) => {
 
         return { success: true, data: response }
     } catch (e) {
-        console.log('Sign in failed', e)
-        return { success: false, error: 'Sign in failed' }
+        console.error('Sign in failed', e)
+        
+        // Provide more specific error message
+        if (e instanceof Error) {
+            const errorMessage = e.message.toLowerCase();
+            if (errorMessage.includes('invalid') || errorMessage.includes('credentials')) {
+                return { success: false, error: 'Invalid email or password. Please try again.' }
+            }
+        }
+        
+        return { success: false, error: 'Sign in failed. Please try again.' }
     }
 }
 
@@ -40,7 +61,7 @@ export const signOut = async () => {
         const auth = await getAuth();
         await auth.api.signOut({ headers: await headers() });
     } catch (e) {
-        console.log('Sign out failed', e)
-        return { success: false, error: 'Sign out failed' }
+        console.error('Sign out failed', e)
+        return { success: false, error: 'Sign out failed. Please try again.' }
     }
 }

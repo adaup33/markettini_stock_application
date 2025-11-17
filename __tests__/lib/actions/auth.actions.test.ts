@@ -99,7 +99,59 @@ describe('Auth Actions', () => {
       const result = await signUpWithEmail(formData);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Sign up failed');
+      expect(result.error).toBe('Sign up failed. Please try again.');
+      expect(inngest.send).not.toHaveBeenCalled();
+    });
+
+    it('should provide specific error message for duplicate email', async () => {
+      const mockAuth = {
+        api: {
+          signUpEmail: jest.fn().mockRejectedValue(new Error('User with this email already exists')),
+        },
+      };
+
+      (getAuth as jest.Mock).mockResolvedValue(mockAuth);
+
+      const formData: SignUpFormData = {
+        email: 'existing@example.com',
+        password: 'password123',
+        fullName: 'Test User',
+        country: 'USA',
+        investmentGoals: 'Growth',
+        riskTolerance: 'Medium',
+        preferredIndustry: 'Technology',
+      };
+
+      const result = await signUpWithEmail(formData);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('This email is already registered. Please use a different email or sign in.');
+      expect(inngest.send).not.toHaveBeenCalled();
+    });
+
+    it('should provide specific error message for password validation', async () => {
+      const mockAuth = {
+        api: {
+          signUpEmail: jest.fn().mockRejectedValue(new Error('Password must be at least 8 characters')),
+        },
+      };
+
+      (getAuth as jest.Mock).mockResolvedValue(mockAuth);
+
+      const formData: SignUpFormData = {
+        email: 'test@example.com',
+        password: 'short',
+        fullName: 'Test User',
+        country: 'USA',
+        investmentGoals: 'Growth',
+        riskTolerance: 'Medium',
+        preferredIndustry: 'Technology',
+      };
+
+      const result = await signUpWithEmail(formData);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Password does not meet requirements. Please use at least 8 characters.');
       expect(inngest.send).not.toHaveBeenCalled();
     });
 
@@ -178,7 +230,7 @@ describe('Auth Actions', () => {
       const result = await signInWithEmail(formData);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Sign in failed');
+      expect(result.error).toBe('Invalid email or password. Please try again.');
     });
 
     it('should handle network errors during sign in', async () => {
@@ -198,7 +250,7 @@ describe('Auth Actions', () => {
       const result = await signInWithEmail(formData);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Sign in failed');
+      expect(result.error).toBe('Sign in failed. Please try again.');
     });
   });
 
@@ -231,7 +283,7 @@ describe('Auth Actions', () => {
 
       expect(result).toEqual({
         success: false,
-        error: 'Sign out failed',
+        error: 'Sign out failed. Please try again.',
       });
     });
 
