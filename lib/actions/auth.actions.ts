@@ -43,13 +43,18 @@ export const signUpWithEmail = async ({ email, password, fullName, country, inve
             }
         }
 
-        // Send welcome email event
+        // Send welcome email event (non-blocking - don't fail signup if this fails)
         // Note: response may be null/undefined when autoSignIn is disabled, but that's OK
         // If signup succeeded without error, we should send the event
-        await inngest.send({
-            name: 'app/user.created',
-            data: { email, name: fullName, country, investmentGoals, riskTolerance, preferredIndustry }
-        })
+        try {
+            await inngest.send({
+                name: 'app/user.created',
+                data: { email, name: fullName, country, investmentGoals, riskTolerance, preferredIndustry }
+            })
+        } catch (inngestError) {
+            // Log the error but don't fail the signup - user account was created successfully
+            console.error('Failed to send welcome email event (non-critical):', inngestError)
+        }
 
         return { success: true, data: response }
     } catch (e) {
