@@ -10,6 +10,7 @@ import FooterLink from "@/components/forms/FooterLink";
 import {signUpWithEmail} from "@/lib/actions/auth.actions";
 import {useRouter} from "next/navigation";
 import {toast} from "sonner";
+import {authClient} from "@/lib/better-auth/client";
 
 const SignUp = () => {
     const router = useRouter()
@@ -33,19 +34,41 @@ const SignUp = () => {
 
     const onSubmit = async (data: SignUpFormData) => {
         try {
+            // Step 1: Create user account via server action
             const result = await signUpWithEmail(data);
 
-            if (result.success) {
-                toast.success('Account created successfully');  // ✅ Success feedback
-                router.push('/');
-            } else {
-                // ✅ Handle API validation errors
+            if (!result.success) {
+                // User creation failed
                 toast.error('Sign up failed', {
                     description: result.error || 'Failed to create account'
                 });
+                return;
             }
+
+            // Step 2: Sign in from client side to create session cookie
+            toast.success('Account created successfully', {
+                description: 'Signing you in...'
+            });
+
+            const signInResult = await authClient.signIn.email({
+                email: data.email,
+                password: data.password,
+            });
+
+            if (signInResult.error) {
+                // User was created but sign-in failed - redirect to sign-in page
+                toast.warning('Please sign in with your new account', {
+                    description: 'Account created but auto sign-in failed'
+                });
+                router.push('/sign-in');
+                return;
+            }
+
+            // Success! User is created and signed in
+            toast.success('Welcome! Redirecting to dashboard...');
+            router.push('/');
         } catch (e) {
-            // ✅ Handle unexpected errors
+            // Handle unexpected errors
             console.error('Sign up error:', e);
             toast.error('Sign up failed', {
                 description: e instanceof Error ? e.message : 'An unexpected error occurred'
@@ -65,7 +88,13 @@ const SignUp = () => {
                     placeholder="John Doe"
                     register={register}
                     error={errors.fullName}
-                    validation={{ required: 'Full name is required', minLength: 2 }}
+                    validation={{ 
+                        required: 'Full name is required',
+                        minLength: {
+                            value: 2,
+                            message: 'Full name must be at least 2 characters'
+                        }
+                    }}
                 />
 
                 <InputField
@@ -74,7 +103,13 @@ const SignUp = () => {
                     placeholder="Please enter your email"
                     register={register}
                     error={errors.email}
-                    validation={{ required: 'Email name is required', pattern: /^\w+@\w+\.\w+$/, message: 'Email address is required' }}
+                    validation={{ 
+                        required: 'Email is required',
+                        pattern: {
+                            value: /^\S+@\S+\.\S+$/,
+                            message: 'Please enter a valid email address'
+                        }
+                    }}
                 />
 
                 <InputField
@@ -84,7 +119,13 @@ const SignUp = () => {
                     type="password"
                     register={register}
                     error={errors.password}
-                    validation={{ required: 'Password is required', minLength: 8 }}
+                    validation={{ 
+                        required: 'Password is required',
+                        minLength: {
+                            value: 8,
+                            message: 'Password must be at least 8 characters'
+                        }
+                    }}
                 />
 
                 <CountrySelectField

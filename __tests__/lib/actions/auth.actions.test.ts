@@ -63,6 +63,7 @@ describe('Auth Actions', () => {
           password: 'password123',
           name: 'Test User',
         },
+        headers: {},
       });
       expect(inngest.send).toHaveBeenCalledWith({
         name: 'app/user.created',
@@ -99,7 +100,59 @@ describe('Auth Actions', () => {
       const result = await signUpWithEmail(formData);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Sign up failed');
+      expect(result.error).toBe('Failed to create account. Please try again.');
+      expect(inngest.send).not.toHaveBeenCalled();
+    });
+
+    it('should handle user already exists error', async () => {
+      const mockAuth = {
+        api: {
+          signUpEmail: jest.fn().mockRejectedValue(new Error('User already exists')),
+        },
+      };
+
+      (getAuth as jest.Mock).mockResolvedValue(mockAuth);
+
+      const formData: SignUpFormData = {
+        email: 'existing@example.com',
+        password: 'password123',
+        fullName: 'Existing User',
+        country: 'USA',
+        investmentGoals: 'Growth',
+        riskTolerance: 'Medium',
+        preferredIndustry: 'Technology',
+      };
+
+      const result = await signUpWithEmail(formData);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('An account with this email already exists. Please sign in instead.');
+      expect(inngest.send).not.toHaveBeenCalled();
+    });
+
+    it('should handle email-related errors', async () => {
+      const mockAuth = {
+        api: {
+          signUpEmail: jest.fn().mockRejectedValue(new Error('Invalid email format')),
+        },
+      };
+
+      (getAuth as jest.Mock).mockResolvedValue(mockAuth);
+
+      const formData: SignUpFormData = {
+        email: 'invalid-email',
+        password: 'password123',
+        fullName: 'Test User',
+        country: 'USA',
+        investmentGoals: 'Growth',
+        riskTolerance: 'Medium',
+        preferredIndustry: 'Technology',
+      };
+
+      const result = await signUpWithEmail(formData);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Invalid email format');
       expect(inngest.send).not.toHaveBeenCalled();
     });
 
@@ -158,6 +211,7 @@ describe('Auth Actions', () => {
           email: 'test@example.com',
           password: 'password123',
         },
+        headers: {},
       });
     });
 
