@@ -18,8 +18,25 @@ export const signUpWithEmail = async ({ email, password, fullName, country, inve
 
         return { success: true, data: response }
     } catch (e) {
-        console.log('Sign up failed', e)
-        return { success: false, error: 'Sign up failed' }
+        console.error('Sign up error:', e)
+        
+        // Extract error message from Better Auth error
+        const errorMessage = e instanceof Error ? e.message : 'Sign up failed';
+        
+        // Check if this is a "user already exists" error
+        if (errorMessage.toLowerCase().includes('user') && 
+            (errorMessage.toLowerCase().includes('exists') || errorMessage.toLowerCase().includes('already'))) {
+            return { 
+                success: false, 
+                error: 'An account with this email already exists. Please sign in instead.' 
+            }
+        }
+        
+        // Return a more descriptive error
+        return { 
+            success: false, 
+            error: errorMessage.includes('email') ? errorMessage : 'Failed to create account. Please try again.' 
+        }
     }
 }
 
